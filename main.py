@@ -85,6 +85,7 @@ class DisplayItem(ft.Container):
             border_radius=8,
             **kwargs
         )
+        
 def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.DARK
     page.window.height = 950
