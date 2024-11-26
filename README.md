@@ -3,6 +3,7 @@
 </p>
   <h1 align="center">
   Fluent Flet
+  <img width="5%" align="center" src="https://img.shields.io/badge/prerelease-8FD28F" alt="logo">
 </h1>
 
 <p align="center">
