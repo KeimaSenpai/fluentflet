@@ -1,5 +1,5 @@
 import flet as ft
-from ..utils.fluent_design_system import FluentDesignSystem
+from fluentflet.utils.fluent_design_system import FluentDesignSystem
 
 class Radio(ft.Container):
     def __init__(

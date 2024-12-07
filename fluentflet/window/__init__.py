@@ -1,3 +1,3 @@
-from .fluent_window import FluentWindow, Titlebar
+from .fluent_window import FluentWindow, FluentState, Titlebar
 
-__all__ = ["FluentWindow", "Titlebar"]
+__all__ = ["FluentWindow", "FluentState", "Titlebar"]

@@ -1,7 +1,7 @@
 import flet as ft
 from enum import Enum
 import asyncio
-from ..utils.fluent_design_system import FluentDesignSystem
+from fluentflet.utils.fluent_design_system import FluentDesignSystem
 
 class CheckState(Enum):
     UNCHECKED = "unchecked"

@@ -1,1 +1,7 @@
 tests/
+build.py
+flrec.py
+grid.py
+t.py
+flipview.py
+git_changes_summary.md

@@ -1,5 +1,6 @@
 import flet as ft
 from typing import Union
+from fluentflet.utils.fluent_design_system import FluentDesignSystem
 
 class Toggle(ft.Container):
     def __init__(
@@ -25,6 +26,7 @@ class Toggle(ft.Container):
         self.on_change = on_change
         self.disabled = disabled
         self.label_style = label_style
+        self.theme = FluentDesignSystem().dark_theme
 
         self._handle_size = height - 4
         self._handle_expanded_width = width - 20  # Width when stretched
@@ -34,8 +36,8 @@ class Toggle(ft.Container):
             width=width,
             height=height,
             border_radius=height/2,
-            bgcolor=ft.colors.with_opacity(0, "#ffffff"),
-            border=ft.border.all(1, ft.colors.with_opacity(0.544, "#ffffff")),
+            bgcolor=self.theme.fills.get_fill("control_fill_transparent"),
+            border=ft.border.all(1, self.theme.colors.get_color("text_tertiary")),
             animate=ft.animation.Animation(300, "easeInOut"),
         )
         
@@ -46,7 +48,7 @@ class Toggle(ft.Container):
             height=handle_size,
             left=3 if not value else width - handle_size - 2,
             top=3,
-            bgcolor=ft.colors.WHITE,
+            bgcolor=self.theme.colors.get_color("text_primary"),
             border_radius=handle_size/2,
             animate_position=ft.animation.Animation(300, ft.AnimationCurve.EASE_OUT_EXPO),  # Animate position changes
         )
@@ -75,7 +77,7 @@ class Toggle(ft.Container):
             self._label_text = ft.Text(
                 self._label,
                 style=label_style,
-                color=ft.colors.with_opacity(0.368, "#ffffff") if disabled else ft.colors.with_opacity(1, "#ffffff"),
+                color=(self.theme.colors.get_color("text_disabled") if disabled else self.theme.colors.get_color("text_primary")),
                 size=15
             )
             
@@ -122,18 +124,23 @@ class Toggle(ft.Container):
 
     def _update_colors(self):
         if self.disabled:
-            self._track.border_color = ft.colors.with_opacity(0.16, "#ffffff")
-            self._track.bgcolor = ft.colors.TRANSPARENT
-            self._handle.bgcolor = ft.colors.with_opacity(.3, "#ffffff")
+            self._track.border_color = self.theme.colors.get_color("text_disabled")
+            self._track.bgcolor = self.theme.fills.get_fill("control_fill_transparent")
+            self._handle.bgcolor = self.theme.colors.get_color("text_disabled")
+            if hasattr(self, '_label_text'):
+                self._label_text.color = self.theme.colors.get_color("text_disabled")
         else:
             if self.value:
-                self._track.border_color = "#62cdfe"
-                self._track.bgcolor = "#62cdfe"
-                self._handle.bgcolor = ft.colors.BLACK
+                self._track.border_color = self.theme.colors.get_color("accent_default")
+                self._track.bgcolor = self.theme.colors.get_color("accent_default")
+                self._handle.bgcolor = self.theme.colors.get_color("text_on_accent_primary")
             else:
-                self._track.border_color = ft.colors.with_opacity(0.544, "#ffffff")
-                self._track.bgcolor = ft.colors.with_opacity(0, "#ffffff")
-                self._handle.bgcolor = ft.colors.WHITE
+                self._track.border_color = self.theme.colors.get_color("text_tertiary")
+                self._track.bgcolor = self.theme.fills.get_fill("control_fill_transparent")
+                self._handle.bgcolor = self.theme.colors.get_color("text_primary")
+            if hasattr(self, '_label_text'):
+                self._label_text.color = self.theme.colors.get_color("text_primary")
+
 
     @property
     def label(self):

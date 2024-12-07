@@ -1,5 +1,5 @@
 import flet as ft
-from ..utils.fluent_design_system import FluentDesignSystem
+from fluentflet.utils.fluent_design_system import FluentDesignSystem
 
 class ListItem(ft.GestureDetector):
     instances = []
@@ -9,6 +9,7 @@ class ListItem(ft.GestureDetector):
         content,
         on_click = None,
         is_dark_mode: bool = True,
+        selected: bool = False,
         **kwargs
     ):
         # Initialize design system
@@ -19,7 +20,7 @@ class ListItem(ft.GestureDetector):
         self._on_click = on_click
         self.is_hovered = False
         self.is_pressed = False
-        self.is_selected = False
+        self._is_selected = False
 
         # Add this instance to the class instances list
         ListItem.instances.append(self)
@@ -40,10 +41,11 @@ class ListItem(ft.GestureDetector):
                         height=18,
                         bgcolor=self.theme.colors.get_color("accent_default"),
                         border_radius=ft.border_radius.all(4),
-                        animate = ft.animation.Animation(
+                        animate=ft.animation.Animation(
                             duration=100,
-                            curve=ft.AnimationCurve.ELASTIC_OUT  # Bouncy effect
+                            curve=ft.AnimationCurve.ELASTIC_OUT
                         ),
+                        expand=True,
                         visible=False,
                         left=0,
                         top=11,
@@ -55,16 +57,14 @@ class ListItem(ft.GestureDetector):
                 duration=self.design_system.control_properties.control_fast_duration,
                 curve=ft.AnimationCurve.EASE_OUT
             ),
+            expand=True
         )
 
         # Store reference to indicator
         self.indicator = self.container.content.controls[1]
 
         super().__init__(
-            content=ft.Container(
-                self.container,
-                # margin=ft.margin.only(left=5)
-            ),
+            content=self.container,
             mouse_cursor=ft.MouseCursor.BASIC,
             on_enter=self._on_enter,
             on_exit=self._on_exit,
@@ -73,25 +73,40 @@ class ListItem(ft.GestureDetector):
             on_tap=self._on_tap,
         )
 
+        # Set initial selected state
+        if selected:
+            self.selected = True
+
+    @property
+    def selected(self) -> bool:
+        """Get the selected state"""
+        return self._is_selected
+
+    @selected.setter
+    def selected(self, value: bool):
+        """Set the selected state and update visuals"""
+        if value != self._is_selected:
+            if value:
+                # Deselect other items first
+                ListItem.deselect_all(except_item=self)
+            
+            self._is_selected = value
+            self.indicator.visible = value
+            self.update_color()
+            self.indicator.update()
+            
     def update_theme(self, is_dark_mode: bool):
         """Update list item theme colors"""
         self.theme = self.design_system.dark_theme if is_dark_mode else self.design_system.light_theme
-        
-        # Update indicator color
         self.indicator.bgcolor = self.theme.colors.get_color("accent_default")
-        
-        # Update background colors based on current state
         self.update_color()
 
     @classmethod
     def deselect_all(cls, except_item=None):
         """Deselect all items except the specified one"""
         for item in cls.instances:
-            if item != except_item and item.is_selected:
-                item.is_selected = False
-                item.indicator.visible = False
-                item.update_color()
-                item.indicator.update()
+            if item != except_item and item.selected:
+                item.selected = False
 
     def _on_enter(self, e):
         self.is_hovered = True
@@ -107,23 +122,16 @@ class ListItem(ft.GestureDetector):
 
     def _on_click_up(self, e):
         self.is_pressed = False
-        if not self.is_selected:
+        if not self.selected:
             self.update_color()
 
     def _on_tap(self, e):
-        # Deselect all other items before selecting this one
-        ListItem.deselect_all(except_item=self)
-        
-        # Toggle selection for this item
-        self.is_selected = not self.is_selected
-        self.indicator.visible = self.is_selected
+        self.selected = not self.selected
         if self._on_click:
             self._on_click(e)
-        self.update_color()
-        self.indicator.update()
 
     def update_color(self):
-        if self.is_selected:
+        if self.selected:
             self.container.bgcolor = self.theme.fills.get_fill("control_fill_secondary")
         elif self.is_pressed:
             self.container.bgcolor = self.theme.fills.get_fill("control_fill_secondary")

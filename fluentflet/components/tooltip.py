@@ -7,7 +7,7 @@ class ToolTip(ft.Tooltip):
             border_radius=4,
             text_style=ft.TextStyle(size=11, color=ft.colors.WHITE),
             bgcolor="#2d2d2d",
-            border=ft.border.all(1, ft.colors.with_opacity(.8, ft.colors.BLACK)),
+            border=ft.border.all(1, ft.colors.with_opacity(.6, ft.colors.BLACK)),
             prefer_below=False,
             wait_duration=300,
             **kwargs

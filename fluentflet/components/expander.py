@@ -1,7 +1,7 @@
 import flet as ft
 from typing import Union
 from fluentflet.components.button import Button, ButtonVariant
-from ..utils.fluent_design_system import FluentDesignSystem
+from fluentflet.utils.fluent_design_system import FluentDesignSystem
 
 class Expander(ft.Container):
     def __init__(

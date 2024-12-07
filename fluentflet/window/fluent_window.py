@@ -59,6 +59,7 @@ window.navigate("user_profile", user_id="123")
 '''
 
 import flet as ft
+from pathlib import Path
 from fluentflet.components import ListItem, Button, ButtonVariant, ToolTip
 from fluentflet.utils import FluentIcon, FluentIcons
 from typing import Optional, Any, Callable, Union, Dict
@@ -74,101 +75,214 @@ class NavigationDivider(ft.Container):
 
 class Titlebar(ft.Container):
     def __init__(
-        self, 
-        title: str = "fluent flet", 
+        self,
+        content: ft.Control | None = None,
+        title: str = "fluent flet",
         icon: str | ft.Control | None = None,
-        icon_size: int = 20,
+        title_style: dict | None = None,
+        show_window_controls: bool = True,
+        window_controls_style: dict | None = None,
+        layout: dict | None = None,
+        on_minimize: Callable | None = None,
+        on_maximize: Callable | None = None,
+        on_close: Callable | None = None,
         **kwargs
     ):
-        # Remove our custom parameters from kwargs before passing to super()
-        titlebar_kwargs = {
-            'title': title,
-            'icon': icon,
-            'icon_size': icon_size
-        }
-        
-        # Initialize Container with remaining kwargs
         super().__init__(**kwargs)
         
-        # Store our custom parameters
-        self.title = titlebar_kwargs['title']
-        self.icon = titlebar_kwargs['icon']
-        self.icon_size = titlebar_kwargs['icon_size']
+        # Store configuration
+        self.custom_content = content
+        self.show_window_controls = show_window_controls
         
-        # Set default properties
-        self.top_bar_color = "transparent" # "#1F1F1F"
-        self.height = 50
-        self.padding = ft.padding.only(left=20, right=8)
-        self.bgcolor = kwargs.get('bgcolor', self.top_bar_color)
+        # Default title configuration
+        self.title_config = {
+            "text": title,
+            "size": 14,
+            "weight": ft.FontWeight.NORMAL,
+            "color": "white",
+            "font_family": None,
+            "text_align": ft.TextAlign.LEFT,
+            **(title_style or {})
+        }
+        
+        # Default icon configuration
+        self.icon = (
+            icon if isinstance(icon, ft.Control)
+            else ft.Image(src=icon, width=15, height=15) if icon
+            else ft.Image("fluentflet/static/fluentflet.png", width=15, height=15)
+        )
+        
+        # Default window controls configuration
+        self.window_controls_config = {
+            "icon_size": 16,
+            "icon_color": "#ffffff",
+            "button_variant": ButtonVariant.HYPERLINK,
+            "hover_color": "#c42b1c",
+            "icons": {
+                "minimize": ft.icons.REMOVE,
+                "maximize": ft.icons.CROP_SQUARE,
+                "close": ft.icons.CLOSE
+            },
+            **(window_controls_style or {})
+        }
+        
+        # Default layout configuration
+        self.layout_config = {
+            "alignment": ft.MainAxisAlignment.SPACE_BETWEEN,
+            "spacing": 0,
+            "expand": True,
+            "title_spacing": 10,
+            **(layout or {})
+        }
+        
+        # Event handlers
+        self.on_minimize = on_minimize or self.minimize_window
+        self.on_maximize = on_maximize or self.toggle_maximize_window
+        self.on_close = on_close or self.close_window
+        
+        # Set default container properties
+        self.height = kwargs.get('height', 50)
+        self.padding = kwargs.get('padding', ft.padding.only(left=20, right=8))
+        self.bgcolor = kwargs.get('bgcolor', "transparent")
         
         # Initialize the titlebar content
-        self.content = self.init_titlebar()
-
-    def init_titlebar(self):
-        window_controls = ft.Row(
+        self.content = self.build_titlebar()
+    
+    def build_title_section(self) -> ft.Control:
+        """Build the title section with icon and text"""
+        return ft.Row(
+            controls=[
+                self.icon,
+                ft.Text(
+                    self.title_config["text"],
+                    size=self.title_config["size"],
+                    weight=self.title_config["weight"],
+                    color=self.title_config["color"],
+                    font_family=self.title_config["font_family"],
+                    text_align=self.title_config["text_align"]
+                )
+            ],
+            spacing=self.layout_config["title_spacing"]
+        )
+    
+    def build_window_controls(self) -> ft.Control:
+        """Build the window control buttons"""
+        cfg = self.window_controls_config
+        return ft.Row(
             controls=[
                 Button(
-                    content=ft.Icon(ft.icons.REMOVE, color="#ffffff", size=16),
-                    variant=ButtonVariant.HYPERLINK,
-                    on_click=lambda _: self.minimize_window(),
+                    content=ft.Icon(cfg["icons"]["minimize"], 
+                                  color=cfg["icon_color"], 
+                                  size=cfg["icon_size"]),
+                    variant=cfg["button_variant"],
+                    on_click=lambda _: self.on_minimize(),
                 ),
                 Button(
-                    content=ft.Icon(ft.icons.CROP_SQUARE, color="#ffffff", size=16),
-                    variant=ButtonVariant.HYPERLINK,
-                    on_click=lambda _: self.toggle_maximize_window(),
+                    content=ft.Icon(cfg["icons"]["maximize"], 
+                                  color=cfg["icon_color"], 
+                                  size=cfg["icon_size"]),
+                    variant=cfg["button_variant"],
+                    on_click=lambda _: self.on_maximize(),
                 ),
                 Button(
-                    content=ft.Icon(ft.icons.CLOSE, color="#ffffff", size=16),
-                    variant=ButtonVariant.HYPERLINK,
-                    on_click=lambda _: self.close_window(),
+                    content=ft.Icon(cfg["icons"]["close"], 
+                                  color=cfg["icon_color"], 
+                                  size=cfg["icon_size"]),
+                    variant=cfg["button_variant"],
+                    on_click=lambda _: self.on_close(),
                     on_hover=self.handle_close_hover,
                 )
             ],
             spacing=0,
         )
-
-        self.title_text = ft.Text(
-            self.title,
-            size=14,
-            weight=ft.FontWeight.NORMAL,
-            color="white"
-        )
-
+    
+    def build_titlebar(self) -> ft.Control:
+        """Build the complete titlebar layout"""
+        controls = []
+        
+        # Add title section if no custom content
+        if not self.custom_content:
+            controls.append(self.build_title_section())
+        else:
+            controls.append(self.custom_content)
+        
+        # Add window controls if enabled
+        if self.show_window_controls:
+            if self.layout_config["expand"]:
+                controls.append(ft.Container(expand=True))
+            controls.append(self.build_window_controls())
+        
         return ft.Row(
-            controls=[
-                ft.Row(
-                    controls=[self.icon, self.title_text],
-                    spacing=10,
-                ),
-                # ft.Container(expand=True),
-                window_controls,
-            ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            controls=controls,
+            alignment=self.layout_config["alignment"],
+            spacing=self.layout_config["spacing"]
         )
-
-    def set_title(self, new_title: str):
-        """Set the title text value without updating"""
-        self.title_text.value = new_title
-
+    
     def update_title(self, new_title: str):
-        """Update the title text and refresh the control"""
-        self.title_text.value = new_title
-        if self.page:  # Only update if added to page
-            self.title_text.update()
-
+        """Update the title text"""
+        self.title_config["text"] = new_title
+        if not self.custom_content:
+            self.content = self.build_titlebar()
+            if self.page:
+                self.update()
+    
+    def update_content(self, new_content: ft.Control):
+        """Update the custom content"""
+        self.custom_content = new_content
+        self.content = self.build_titlebar()
+        if self.page:
+            self.update()
+    
     def handle_close_hover(self, e):
+        """Handle hover effect on close button"""
         container = e.control
-        container.bgcolor = "#c42b1c" if e.data == "true" else None
+        container.bgcolor = (self.window_controls_config["hover_color"] 
+                           if e.data == "true" else None)
         container.update()
-
+    
     def minimize_window(self):
+        """Default minimize handler"""
         self.page.window.minimized = True
-
+    
     def toggle_maximize_window(self):
+        """Default maximize handler"""
         self.page.window.maximized = not self.page.window.maximized
-
+    
     def close_window(self):
+        """Default close handler"""
         self.page.window.close()
+
+class FluentState:
+   def __init__(self):
+       self._page = None
+       self._subscribers = {}
+       self._state = {}
+
+   def _init_page(self, page: ft.Page):
+       self._page = page
+       self._load_initial_state()
+
+   def _load_initial_state(self):
+       for key in self._page.session.get_keys():
+           self._state[key] = self._page.session.get(key)
+
+   def set(self, key: str, value: any, persist: bool = False):
+       self._state[key] = value
+       if persist:
+           self._page.session.set(key, value)
+       if key in self._subscribers:
+           for callback in self._subscribers[key]:
+               callback(value)
+
+   def get(self, key: str, default=None):
+       return self._state.get(key, default)
+           
+   def subscribe(self, key: str, callback: callable):
+       if key not in self._subscribers:
+           self._subscribers[key] = []
+       self._subscribers[key].append(callback)
+       if key in self._state:
+           callback(self._state[key])
 
 class FluentWindow:
     def __init__(
@@ -183,11 +297,18 @@ class FluentWindow:
         nav_width_expanded=200,
         animation_duration=100,
         show_back_button=True,
+        state_manager: FluentState = FluentState
     ):
         self._page = page
         self._page.window.title_bar_hidden = True
         self._page.window.title_bar_buttons_hidden = True
-        self._page.theme = ft.Theme(scrollbar_theme=ft.ScrollbarTheme(thickness=0.0))
+        self._page.fonts = {
+            "Segoe UI": str(Path("fluentflet/static/fonts/Segoe UI/Segoe UI.ttf")),
+            "Segoe UI Bold": str(Path("fluentflet/static/fonts/Segoe UI/Segoe UI Bold.ttf")),
+            "Segoe UI Italic": str(Path("fluentflet/static/fonts/Segoe UI/Segoe UI Italic.ttf")),
+            "Segoe UI Bold Italic": str(Path("fluentflet/static/fonts/Segoe UI/Segoe UI Bold Italic.ttf"))
+        }
+        self._page.theme = ft.Theme(scrollbar_theme=ft.ScrollbarTheme(thickness=0.0), font_family="Segoe UI")
         self._page.accepts_drops = True
         self._page.blur_effect = True
         self._page.padding = 0
@@ -230,18 +351,65 @@ class FluentWindow:
 
         self.routes = {}
         self.current_route = None
+        self.route_to_nav_index = {}
+        self.template_routes = {}
 
-    def add_route(self, route: str, view_builder: Callable[..., ft.Control]):
-        """Add a route with a view builder that can accept parameters"""
-        self.routes[route] = view_builder
+        if navigation_items:
+            for idx, item in enumerate(navigation_items):
+                if "label" in item:
+                    route = item.get("route", "/" + item["label"].lower().replace(" ", "-"))
+                    self.route_to_nav_index[route] = idx
+
+        self._page.on_route_change = self._handle_route_change
+
+        self.state = state_manager()
+        self.state._init_page(page)
+
+    def route(self, path: str, is_template: bool = False):
+        """Decorator for registering routes
+        
+        Args:
+            path: Route path (e.g., "/users" or "/users/:id")
+            is_template: Whether this is a template route with parameters
+        """
+        def decorator(view_func):
+            self.add_route(path, view_func, is_template)
+            return view_func
+        return decorator
+
+    def add_route(self, route: str, view_builder: Callable[..., ft.Control], is_template: bool = False):
+        """
+        Add a route with a view builder that can accept parameters.
+        
+        Args:
+            route: The route pattern (e.g., "/user" or "/user/:id" for templates)
+            view_builder: Function that returns a Control, can accept route parameters
+            is_template: Whether this is a template route with parameters
+        """
+        if is_template:
+            self.template_routes[route] = view_builder
+        else:
+            self.routes[route] = view_builder
 
     def navigate(self, route: str, **params):
-        """Navigate to a route with parameters"""
-        if route in self.routes:
-            view = self.routes[route](**params) if callable(self.routes[route]) else self.routes[route]
-            self.content_container.content.controls = [view]
-            self.content_container.update()
-            self.current_route = route
+        """
+        Navigate to a route with optional parameters.
+        Updates browser history 
+        and triggers route change handling.
+        Args:
+            route: The route to navigate to
+            **params: Optional route parameters
+        """
+        # Construct full route with parameters if needed
+        full_route = route
+        if params:
+            # Replace template parameters in route
+            for key, value in params.items():
+                full_route = full_route.replace(f":{key}", str(value))
+        
+        # Update page route (this will trigger route change handler)
+        self._page.route = full_route
+        self._page.update()
 
     def add_navigation_divider(self, after_index: int):
         """Add a divider after the specified navigation item index"""
@@ -296,7 +464,8 @@ class FluentWindow:
                             color=self.colors["icon_color"],
                         ),
                         variant=ButtonVariant.HYPERLINK,
-                        disabled=True
+                        # on_click=self.go_back,
+                        disabled=False
                     ),
                     margin=ft.margin.only(top=10)
                 ),
@@ -381,9 +550,6 @@ class FluentWindow:
         self.is_nav_expanded = False
         self.nav_width_collapsed = nav_width_collapsed
         self.nav_width_expanded = nav_width_expanded
-        
-        # Set initial selection (accounting for dividers)
-        self.select_nav_item(selected_index)
 
         # Create main layout
         self.main_layout = ft.Row(
@@ -407,6 +573,7 @@ class FluentWindow:
 
         # Add to page
         self._page.add(self.main_layout)
+        self.select_nav_item(selected_index)
 
     def create_nav_row(self, icon, label):
         return ft.Row(
@@ -456,30 +623,90 @@ class FluentWindow:
         # Clear all selections
         for item in self.nav_items:
             if isinstance(item, ListItem):
-                item.is_selected = False
+                item.selected = False  # Using the new selected property
         
         # Find the actual item to select
         actual_idx = self.nav_index_map.get(index)
         if actual_idx is not None:
             item = self.nav_items[actual_idx]
             if isinstance(item, ListItem):
-                item.is_selected = True
+                item.selected = True  # Using the new selected property
                 self.selected_index = index
 
     def handle_nav_click(self, index: int):
         """Handle navigation item click and route change"""
         self.select_nav_item(index)
         
-        # Navigate to the corresponding route
+        # Get the actual route from the navigation item
         actual_idx = self.nav_index_map.get(index)
         if actual_idx is not None:
-            route = self.navigation_items[actual_idx]["label"].lower()
-            self.navigate(route)
+            nav_item = self.navigation_items[actual_idx]
+            if "route" in nav_item:  # Use the route defined in the nav item
+                self.navigate(nav_item["route"])
+            else:  # Fallback to the old behavior
+                route = nav_item["label"].lower()
+                self.navigate(route)
         
         # Update navigation items' visual state
         for item in self.nav_items:
             if isinstance(item, ListItem):
                 item.update()
+
+    def _handle_route_change(self, e):
+        """Handle route changes from both navigation and browser history"""
+        route = e.route
+        
+        # First try exact routes
+        if route in self.routes:
+            view = self.routes[route]()
+        else:
+            # Try template routes
+            matched_builder = None
+            matched_params = {}
+            
+            for template, builder in self.template_routes.items():
+                # Simple template matching (can be enhanced with regex)
+                template_parts = template.split('/')
+                route_parts = route.split('/')
+                
+                if len(template_parts) == len(route_parts):
+                    params = {}
+                    matches = True
+                    
+                    for t_part, r_part in zip(template_parts, route_parts):
+                        if t_part.startswith(':'):
+                            params[t_part[1:]] = r_part
+                        elif t_part != r_part:
+                            matches = False
+                            break
+                    
+                    if matches:
+                        matched_builder = builder
+                        matched_params = params
+                        break
+            
+            if matched_builder:
+                view = matched_builder(**matched_params)
+            else:
+                # Default to home route if no match
+                view = self.routes.get('/', lambda: ft.Text("404 - Not Found"))()
+        
+        # Update the view
+        self.content_container.content.controls = [view]
+        self.content_container.update()
+        self.current_route = route
+        
+        # Update navigation selection if route exists in navigation items
+        if route in self.route_to_nav_index:
+            idx = self.route_to_nav_index[route]
+            for nav_idx, actual_idx in self.nav_index_map.items():
+                if actual_idx == idx:
+                    self.select_nav_item(nav_idx)
+                    break
+
+    def go(self, route: str, **params):
+        """Convenience method to navigate to a route"""
+        self.navigate(route, **params)
 
     def add(self, *controls):
         """Override add to use our content container"""

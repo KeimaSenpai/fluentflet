@@ -1,5 +1,5 @@
 import flet as ft
-from ..utils.fluent_design_system import FluentDesignSystem
+from fluentflet.utils.fluent_design_system import FluentDesignSystem
 from fluentflet.components.tooltip import ToolTip
 from enum import Enum
 
@@ -27,7 +27,7 @@ class Slider(ft.Container):
         self.size = size
         self.orientation = orientation
         self.dragging = False
-        self.thumb_size = 24
+        self.thumb_size = 22
         self.is_hovered = False
         self.is_pressed = False
         self.drag_start = 0
@@ -61,11 +61,17 @@ class Slider(ft.Container):
         
         self._create_components()
         
+        # Adjusted container size and padding
         super().__init__(
             content=self._create_slider(),
-            width=size if orientation == SliderOrientation.HORIZONTAL else 48,
-            height=48 if orientation == SliderOrientation.HORIZONTAL else size,
-            padding=ft.padding.only(left=12, right=12, top=12, bottom=12),
+            width=size + self.thumb_size if orientation == SliderOrientation.HORIZONTAL else 55,
+            height=55 if orientation == SliderOrientation.HORIZONTAL else size + self.thumb_size,
+            padding=ft.padding.only(
+                left=0,
+                right=0,
+                top=self.thumb_size/2,
+                bottom=self.thumb_size/2
+            ),
             **kwargs
         )
 
@@ -111,14 +117,15 @@ class Slider(ft.Container):
 
         self.thumb_container.on_hover = self.handle_hover
 
+        # Track dimensions and margins
         if self.orientation == SliderOrientation.HORIZONTAL:
             track_width = self.size
             track_height = 4
-            track_margin = ft.margin.only(top=10)
+            track_margin = ft.margin.only(top=10, left=self.thumb_size/2)
         else:
             track_width = 4
             track_height = self.size
-            track_margin = ft.margin.only(left=10)
+            track_margin = ft.margin.only(top=self.thumb_size/2, left=10)
 
         self.base_track = ft.Container(
             bgcolor=self._get_color("track.base"),
@@ -128,12 +135,16 @@ class Slider(ft.Container):
             margin=track_margin,
         )
 
-        initial_size = track_width if self.orientation == SliderOrientation.HORIZONTAL else track_height
+        # Initialize active track with correct dimensions
+        initial_percentage = (self.current_value - self.min) / (self.max - self.min)
+        initial_active_width = track_width * initial_percentage if self.orientation == SliderOrientation.HORIZONTAL else track_width
+        initial_active_height = track_height if self.orientation == SliderOrientation.HORIZONTAL else track_height * initial_percentage
+        
         self.active_track = ft.Container(
             bgcolor=self._get_color("track.active"),
             border_radius=2,
-            width=initial_size * (self.current_value - self.min) / (self.max - self.min) if self.orientation == SliderOrientation.HORIZONTAL else track_width,
-            height=track_height if self.orientation == SliderOrientation.HORIZONTAL else initial_size * (self.max - self.current_value) / (self.max - self.min),
+            width=initial_active_width,
+            height=initial_active_height,
             margin=track_margin,
         )
 
@@ -154,7 +165,6 @@ class Slider(ft.Container):
         self.drag_start = e.local_x if self.orientation == SliderOrientation.HORIZONTAL else e.local_y
         self.initial_thumb_pos = self.thumb_ring.left if self.orientation == SliderOrientation.HORIZONTAL else self.thumb_ring.top or 0
         self.inner_thumb.margin = ft.margin.all(7)
-        # self.tooltip.visible = True
         self.update()
 
     def handle_pan_update(self, e: ft.DragUpdateEvent):
@@ -164,25 +174,30 @@ class Slider(ft.Container):
         delta = (e.local_x - self.drag_start) if self.orientation == SliderOrientation.HORIZONTAL else (e.local_y - self.drag_start)
         new_position = self.initial_thumb_pos + delta
         
-        max_pos = self.size - self.thumb_size
+        # Adjust position calculation
+        max_pos = self.size
         new_position = max(0, min(max_pos, new_position))
         
-        # Fixed direction for vertical orientation
-        percentage = new_position / max_pos if self.orientation == SliderOrientation.HORIZONTAL else (new_position / max_pos)
+        percentage = new_position / max_pos
         new_value = self.min + percentage * (self.max - self.min)
+        
+        # For vertical slider, invert the value calculation
         if self.orientation == SliderOrientation.VERTICAL:
-            new_value = self.max - (new_value - self.min)
+            new_value = self.max - percentage * (self.max - self.min)
         
         self.current_value = new_value
-
         self._tooltip.message = str(round(self.current_value, 1))
         
         if self.orientation == SliderOrientation.HORIZONTAL:
             self.thumb_ring.left = new_position
-            self.active_track.width = new_position + (self.thumb_size / 2)
+            self.active_track.width = new_position
         else:
             self.thumb_ring.top = new_position
-            self.active_track.height = new_position + (self.thumb_size / 2)
+            self.active_track.height = self.size * (1 - percentage)  # Inverted for vertical
+            self.active_track.margin = ft.margin.only(
+                top=self.thumb_size/2 + new_position,
+                left=self.thumb_size/2
+            )
         
         if self._on_change:
             self._on_change(self)
@@ -194,7 +209,6 @@ class Slider(ft.Container):
         self.dragging = False
         self.is_pressed = False
         self.inner_thumb.margin = ft.margin.all(5)
-        # self.tooltip.visible = False
         self.update()
 
     def handle_hover(self, e):
@@ -207,20 +221,21 @@ class Slider(ft.Container):
 
     def update_thumb_position(self):
         percentage = (self.current_value - self.min) / (self.max - self.min)
-        if self.orientation == SliderOrientation.VERTICAL:
-            percentage = 1 - percentage
-            
-        max_position = self.size - self.thumb_size
-        position = percentage * max_position
-
-        self._tooltip.message = str(round(self.current_value, 1))
         
         if self.orientation == SliderOrientation.HORIZONTAL:
+            position = percentage * self.size
             self.thumb_ring.left = position
-            self.active_track.width = position + (self.thumb_size / 2)
+            self.active_track.width = position
         else:
+            position = (1 - percentage) * self.size  # Inverted for vertical
             self.thumb_ring.top = position
-            self.active_track.height = position + (self.thumb_size / 2)
+            self.active_track.height = self.size * percentage
+            self.active_track.margin = ft.margin.only(
+                top=self.thumb_size/2 + position,
+                left=self.thumb_size/2
+            )
+        
+        self._tooltip.message = str(round(self.current_value, 1))
 
     @property
     def value(self):

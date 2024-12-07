@@ -3,22 +3,33 @@ from datetime import datetime, timedelta
 import calendar
 from time import sleep
 from fluentflet.components.button import Button, ButtonVariant
-from ..utils import FluentIcon, FluentIcons, FluentIconStyle
+from fluentflet.utils import FluentIcon, FluentIcons, FluentIconStyle
+from fluentflet.utils.fluent_design_system import FluentDesignSystem
 
 class Calendar(ft.Container):
-    def __init__(self, on_select=None):
+    def __init__(self, design_system: FluentDesignSystem = FluentDesignSystem(), on_select=None, blackout_dates=None):
         super().__init__()
+        self.design_system = design_system
+        self.theme = self.design_system.dark_theme  # or light_theme based on your needs
+        
         now = datetime.now()
-        self.bgcolor = ft.colors.with_opacity(0.2, ft.colors.BLACK)
-        self.border_radius = 4
+        self.bgcolor = self.theme.fills.get_fill("control_fill_default")
+        self.border_radius = self.design_system.control_properties.control_corner_radius
         self.display_date = datetime.now().replace(day=1)
         self.selected_day = {"month": now.month, "day": str(now.day)}
         self.current_day = {"month": now.month, "day": str(now.day)}
+        self.blackout_dates = blackout_dates or []
         self.view = "days"
         self.scale = ft.transform.Scale(1, alignment=ft.alignment.center)
         self.transform = self.scale
-        self.animate_opacity = ft.animation.Animation(300, "easeInOut")
-        self.animate_scale = ft.animation.Animation(300, "easeInOut")
+        self.animate_opacity = ft.animation.Animation(
+            self.design_system.control_properties.control_normal_duration,
+            "easeInOut"
+        )
+        self.animate_scale = ft.animation.Animation(
+            self.design_system.control_properties.control_normal_duration,
+            "easeInOut"
+        )
         self.width = 340
         self.on_select = on_select
         self.setup_calendar()
@@ -107,19 +118,32 @@ class Calendar(ft.Container):
             self.update()
         return select
 
+    def is_date_blackout(self, day_num):
+        try:
+            current_date = datetime(
+                year=self.display_date.year,
+                month=self.display_date.month,
+                day=int(day_num)
+            )
+            return current_date in self.blackout_dates
+        except ValueError:
+            return False
+
     def toggle_day_selection(self, day_num):
         def toggle(_):
+            if self.is_date_blackout(day_num):
+                return
+            
             current_month = self.display_date.month
             current_year = self.display_date.year
             
             if self.selected_day["month"] == current_month and self.selected_day["day"] == str(day_num):
                 self.selected_day = {"month": None, "day": None}
                 if self.on_select:
-                    self.on_select(None)  # Send None when deselecting
+                    self.on_select(None)
             else:
                 self.selected_day = {"month": current_month, "day": str(day_num)}
-                # Create datetime object for selected date
-                if self.on_select and not day_num.startswith(("-", "+")):  # Only trigger for current month dates
+                if self.on_select and not day_num.startswith(("-", "+")):
                     selected_date = datetime(
                         year=current_year,
                         month=current_month,
@@ -149,11 +173,16 @@ class Calendar(ft.Container):
         for i, month in enumerate(months, 1):
             is_current = i == self.display_date.month
             container = ft.Container(
-                ft.Text(month, size=16, color=ft.colors.BLACK if is_current else ft.colors.WHITE70),
+                ft.Text(
+                    month,
+                    size=16,
+                    color=self.theme.colors.get_color("text_on_accent_primary") if is_current 
+                          else self.theme.colors.get_color("text_secondary")
+                ),
                 width=70,
                 height=70,
                 alignment=ft.alignment.center,
-                bgcolor="#62cdfe" if is_current else None,
+                bgcolor=self.theme.colors.get_color("accent_default") if is_current else None,
                 border_radius=35,
                 on_click=self.select_month(i),
             )
@@ -166,9 +195,15 @@ class Calendar(ft.Container):
                 for i in range(0, 12, 4)
             ], spacing=20),
             padding=20,
-            bgcolor="#323232",
-            animate=ft.animation.Animation(300, "easeInOut"),
-            animate_scale=ft.animation.Animation(300, "easeInOut")
+            bgcolor=self.theme.backgrounds.get_background("solid_background_tertiary"),
+            animate=ft.animation.Animation(
+                self.design_system.control_properties.control_normal_duration,
+                "easeInOut"
+            ),
+            animate_scale=ft.animation.Animation(
+                self.design_system.control_properties.control_normal_duration,
+                "easeInOut"
+            )
         )
         grid.scale = ft.transform.Scale(1, alignment=ft.alignment.center)
 
@@ -216,7 +251,11 @@ class Calendar(ft.Container):
         header = self.create_header(f"{month_name} {self.display_date.year}")
         weekday_containers = [
             ft.Container(
-                ft.Text(day, size=12, color=ft.colors.WHITE),
+                ft.Text(
+                    day,
+                    size=12,
+                    color=self.theme.colors.get_color("text_secondary")
+                ),
                 alignment=ft.alignment.center,
                 padding=5,
             )
@@ -232,21 +271,49 @@ class Calendar(ft.Container):
                              self.selected_day["day"] == day)
                 is_current = (self.current_day["month"] == current_month and 
                             self.current_day["day"] == day)
+                is_blackout = not day.startswith(("-", "+")) and self.is_date_blackout(day)
+                
+                day_text_container = ft.Container(
+                    ft.Text(
+                        day.lstrip("+-"),
+                        size=16,
+                        color=self.theme.colors.get_color("text_on_accent_primary") if is_current 
+                              else (self.theme.colors.get_color("accent_default") if is_selected 
+                              else (self.theme.colors.get_color("text_primary") if not (day.startswith(("-", "+")) or is_blackout) 
+                              else self.theme.colors.get_color("text_disabled")))
+                    ),
+                    alignment=ft.alignment.center,
+                    expand=True
+                )
+                
+                stack_controls = [day_text_container]
+                
+                if is_blackout:
+                    blackout_line = ft.Container(
+                        ft.Container(
+                            bgcolor=self.theme.colors.get_color("text_disabled"),
+                            width=1,
+                            height=30,
+                            rotate=ft.transform.Rotate(0.785398),
+                        ),
+                        alignment=ft.alignment.center,
+                    )
+                    stack_controls.append(blackout_line)
                 
                 container = ft.Container(
-                        ft.Text(
-                            day.lstrip("+-"), 
-                            size=16, 
-                            color = ft.colors.BLACK if is_current else ("#62cdfe" if is_selected else (ft.colors.WHITE if not day.startswith(("-", "+")) else ft.colors.WHITE24))
-                        ),
+                    ft.Stack(
+                        stack_controls,
                         width=40,
                         height=40,
-                        alignment=ft.alignment.center,
-                        bgcolor="#62cdfe" if is_current else None,
-                        border=ft.border.all(1, "#62cdfe") if is_selected else None,
-                        border_radius=20,
-                        on_click=self.toggle_day_selection(day),
-                    )
+                    ),
+                    width=40,
+                    height=40,
+                    alignment=ft.alignment.center,
+                    bgcolor=self.theme.colors.get_color("accent_default") if is_current else None,
+                    border=ft.border.all(1, self.theme.colors.get_color("accent_default")) if is_selected else None,
+                    border_radius=20,
+                    on_click=self.toggle_day_selection(day) if not is_blackout else None,
+                )
             else:
                 container = ft.Container(width=40, height=40)
             day_containers.append(container)
@@ -267,35 +334,48 @@ class Calendar(ft.Container):
                 tight=True
             ),
             padding=10,
-            bgcolor="#323232",
-            animate_opacity=300,  # Add animation duration
-            opacity=1,  # Initial opacity
-            animate=ft.animation.Animation(300, "easeInOut"),
-            animate_scale=ft.animation.Animation(300, "easeInOut")
+            bgcolor=self.theme.backgrounds.get_background("solid_background_tertiary"),
+            animate_opacity=self.design_system.control_properties.control_normal_duration,
+            opacity=1,
+            animate=ft.animation.Animation(
+                self.design_system.control_properties.control_normal_duration,
+                "easeInOut"
+            ),
+            animate_scale=ft.animation.Animation(
+                self.design_system.control_properties.control_normal_duration,
+                "easeInOut"
+            )
         )
         calendar_grid.scale = ft.transform.Scale(1, alignment=ft.alignment.center)
 
         self.content = ft.Column([header, calendar_grid], spacing=0, width=self.width)
-        return calendar_grid  # Return for animation control
+        return calendar_grid
 
     def create_header(self, title):
         return ft.Container(
             ft.Row(
                 [
                     Button(
-                        content=ft.Text(title, size=16, color=ft.colors.WHITE),
+                        design_system=self.design_system,
+                        content=ft.Text(
+                            title,
+                            size=16,
+                            color=self.theme.colors.get_color("text_primary")
+                        ),
                         variant=ButtonVariant.HYPERLINK,
                         on_click=self.toggle_view,
                     ),
                     ft.Row(
                         [
                             Button(
-                                content=ft.Icon(name=ft.icons.ARROW_DROP_UP, size=20, color="#ffffff"),
+                                design_system=self.design_system,
+                                content=ft.Icon(name=ft.icons.ARROW_DROP_UP, size=20, color=self.theme.colors.get_color("text_primary")),
                                 variant=ButtonVariant.HYPERLINK,
                                 on_click=self.change_month(False)
                             ),
                             Button(
-                                content=ft.Icon(name=ft.icons.ARROW_DROP_DOWN, size=20, color="#ffffff"),
+                                design_system=self.design_system,
+                                content=ft.Icon(name=ft.icons.ARROW_DROP_DOWN, size=20, color=self.theme.colors.get_color("text_primary")),
                                 variant=ButtonVariant.HYPERLINK,
                                 on_click=self.change_month(True)
                             )
@@ -305,7 +385,7 @@ class Calendar(ft.Container):
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ),
             padding=ft.padding.only(left=10, right=10, top=10, bottom=10),
-            bgcolor="#2b2b2b"
+            bgcolor="#2b2b2b" # self.theme.backgrounds.get_background("solid_background_secondary")
         )
 
     def _get_month_days(self, year, month):

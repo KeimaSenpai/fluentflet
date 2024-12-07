@@ -1,117 +1,161 @@
 import flet as ft
-from ..utils import FluentIcon, FluentIcons, FluentIconStyle
-from ..utils.fluent_design_system import FluentDesignSystem
-from fluentflet.components.button import Button, ButtonVariant
+from fluentflet.utils import FluentIcon, FluentIcons, FluentIconStyle
+from fluentflet.utils.fluent_design_system import FluentDesignSystem
+from fluentflet.components.button import Button, ButtonVariant 
 
 class TextBox(ft.Container):
     def __init__(
         self,
+        design_system: FluentDesignSystem = FluentDesignSystem(),
         placeholder: str = "TextBox",
         width: int = 200,
         text_size: int = 14,
         height: int = 32,
-        right_icon = None,
         password: bool = False,
+        actions_visible: bool = True,
         **kwargs
     ):
-        # enable **kwargs also for TextField
+        # Keep the kwargs handling for TextField
         textfield_props = set(dir(ft.TextField)) - set(dir(ft.Container))
-        # filter out private methods/attributes (those starting with _)
         textfield_props = {prop for prop in textfield_props if not prop.startswith('_')}
         textfield_kwargs = {k: kwargs.pop(k) for k in dict(kwargs) if k in textfield_props}
 
         super().__init__(**kwargs)
-        self.theme = FluentDesignSystem().dark_theme
+        self.design_system = design_system
+        self.theme = self.design_system.dark_theme  # or light_theme based on your needs
         self.width = width
         self.height = height + 2
         self.default_bgcolor = self.theme.fills.get_fill("control_fill_default")
-        self.bgcolor = self.theme.fills.get_fill("control_fill_default")
-        self.focused_bgcolor = self.theme.fills.get_fill("control_fill_secondary")
-        self.is_password = password
-
+        self.bgcolor = self.default_bgcolor
+        self.actions_visible = actions_visible
         self._action = None
+        self.is_password = password
         
-        # Create the text field with adjusted width for button space
+        # Calculate right padding based on actions
+        right_padding = 40 if password else 10
+        
+        # Create the text field
         self.textfield = ft.TextField(
             border=ft.InputBorder.NONE,
             height=height,
             text_size=text_size,
             password=password,
             bgcolor=ft.colors.TRANSPARENT,
-            color=ft.colors.WHITE,
-            cursor_color=ft.colors.WHITE,
+            color=self.theme.colors.get_color("text_primary"),
+            cursor_color=self.theme.colors.get_color("text_primary"),
             cursor_height=16,
             cursor_width=1,
             hint_text=placeholder,
             hint_style=ft.TextStyle(
-                color=ft.colors.WHITE54,
+                color=self.theme.colors.get_color("text_tertiary"),
                 size=text_size,
                 weight=ft.FontWeight.W_400
             ),
             on_focus=self._handle_focus,
             on_blur=self._handle_blur,
-            content_padding=ft.padding.only(left=10, right=40, bottom=12),  # Increased right padding
+            content_padding=ft.padding.only(left=10, right=right_padding, bottom=7),
             **textfield_kwargs
-        )
-        
-        # Create the search button
-        self.action_button = Button( #textbutton
-            content=right_icon,
-            variant=ButtonVariant.HYPERLINK,
-            # custom_color=ft.colors.with_opacity(0.786, "#ffffff"),
-            width=32,
-            height=32,
-            on_click=self._handle_button_click
         )
 
         # Create the bottom border
         self.bottom_border = ft.Container(
             width=width,
             height=1,
-            bgcolor=ft.colors.WHITE24,
+            bgcolor=self.theme.colors.get_color("text_tertiary"),
         )
+
+        # Add password visibility toggle or actions if provided
+        self.actions_row = ft.Row(spacing=4, visible=self.actions_visible)
+        self.actions_container = ft.Container(
+            content=self.actions_row,
+            right=4,
+            top=0,
+        )
+        
+        # Create stack controls list
+        stack_controls = [
+            ft.Container(
+                content=self.textfield,
+                width=width,
+                height=height,
+            ),
+            ft.Container(
+                content=self.bottom_border,
+                bottom=0,
+                width=width,
+            ),
+            self.actions_container
+        ]
+
+        if password:
+            self.button = Button(
+                design_system=self.design_system,
+                content=self._get_button_icon(),
+                variant=ButtonVariant.HYPERLINK,
+                width=28,
+                height=28,
+                on_click=self._handle_button_click
+            )
+            self.actions_row.controls.append(self.button)
         
         # Setup container properties
         self.content = ft.Stack(
-            controls=[
-                # Main content container
-                ft.Container(
-                    content=self.textfield,
-                    width=width,
-                    height=height,
-                ),
-                # Search button positioned on the right
-                ft.Container(
-                    content=self.action_button,
-                    right=4,
-                    top=0,
-                ),
-                # Bottom border positioned at the bottom
-                ft.Container(
-                    content=self.bottom_border,
-                    bottom=0,
-                    width=width,
-                )
-            ],
+            controls=stack_controls
         )
         self.width = width
-        self.bgcolor = self.theme.fills.get_fill("control_fill_default")
-        self.border_radius = 4
+        self.bgcolor = self.default_bgcolor
+        self.border_radius = self.design_system.control_properties.control_corner_radius
         self.padding = 0
 
     def _get_button_icon(self):
         if self.is_password:
-            return FluentIcon(name=FluentIcons.EYE_SHOW if self.textfield.password else FluentIcons.EYE_HIDE, style=FluentIconStyle.FILLED, size=16)
-        return FluentIcon(name="SEARCH", size=16)
+            return FluentIcon(
+                name=FluentIcons.EYE_HIDE if self.textfield.password else FluentIcons.EYE_SHOW,
+                size=16,
+                color=self.theme.colors.get_color("text_primary")
+            )
+        return FluentIcon(
+            name=FluentIcons.SEARCH,
+            size=16,
+            color=self.theme.colors.get_color("text_primary")
+        )
 
     def _handle_button_click(self, e):
         if self.is_password:
-            # Toggle password visibility
-            self.textfield.password ^= True
-            self.action_button.content = self._get_button_icon()
+            self.textfield.password = not self.textfield.password
+            self.button.content = self._get_button_icon()
             self.update()
         elif self._action:
             self._action(e)
+
+    def add_action(self, icon: FluentIcons, on_click=None, tooltip: str = None):
+        """Add an action button to the textbox."""
+        button = Button(
+            design_system=self.design_system,
+            content=FluentIcon(
+                name=icon,
+                size=16,
+                color=self.theme.colors.get_color("text_primary")
+            ),
+            variant=ButtonVariant.HYPERLINK,
+            width=28,
+            height=28,
+            on_click=on_click,
+            tooltip=tooltip
+        )
+        self.actions_row.controls.append(button)
+        if self.page:
+            self.update()
+        return button
+
+    def clear_actions(self):
+        """Remove all action buttons except password toggle if present."""
+        if self.is_password and self.button in self.actions_row.controls:
+            self.actions_row.controls = [self.button]
+        else:
+            self.actions_row.controls = []
+        if self.page:
+            self.update()
 
     @property
     def action(self):
@@ -122,15 +166,21 @@ class TextBox(ft.Container):
         self._action = func
 
     def _handle_focus(self, e):
-        self.bgcolor = "#1f1f1f"
+        self.bgcolor = self.theme.fills.get_fill("control_fill_input_active")
         self.bottom_border.bgcolor = self.theme.colors.get_color("accent_default")
         self.bottom_border.height = 1.5
+        if not self.actions_visible:
+            self.actions_row.visible = True
+            self.actions_row.update()
         self.update()
 
     def _handle_blur(self, e):
         self.bgcolor = self.default_bgcolor
-        self.bottom_border.bgcolor = ft.colors.WHITE24
+        self.bottom_border.bgcolor = self.theme.colors.get_color("text_tertiary")
         self.bottom_border.height = 1
+        if not self.actions_visible:
+            self.actions_row.visible = False
+            self.actions_row.update()
         self.update()
 
     @property
