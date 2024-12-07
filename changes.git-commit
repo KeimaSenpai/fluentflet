@@ -1,0 +1,29 @@
+Major refactoring of components to use the FluentDesignSystem class for consistent styling and theming across the UI library.
+
+Components changed:
+- `Button`: Refactored to use design system colors and style properties, improved transitions and animations
+- `Calendar`: Added blackout dates feature, integrated design system colors, improved date selection handling
+- `Checkbox`: Updated to use design system colors and theme properties for states
+- `Expander`: Refactored to use design system colors and animations, improved layout handling
+- `ListItem`: Added selected state property, improved selection handling, integrated design system colors
+- `Radio`: Updated to use design system colors and properties, improved state management
+- `Slider`: Fixed positioning issues, improved vertical slider behavior, integrated design system colors
+- `TextBox`: Added action buttons support, improved password visibility toggle, integrated design system colors
+- `Toggle`: Updated to use design system colors and properties, improved state transitions
+- `Tooltip`: Minor style adjustments to borders and opacity
+- `FluentWindow`: Added state management system, improved routing with template support, added fonts
+- `__init__.py`: Added relative_to_assets utility function, improved platform-specific imports
+- `fluent_design_system.py`: Major refactoring to improve color management and theme handling
+
+Implementation details:
+- Introduced new FluentState class for state management
+- Added support for path-based routing with parameters
+- Improved theme switching with separate light/dark theme configurations
+- Added type hints and documentation
+- Improved error handling for SVG icons
+- Added new utility functions for asset management
+
+Breaking changes:
+- Components now require FluentDesignSystem instance or use default instance
+- Changed theme color format from HSL to hex/rgba
+- Updated component constructors to support theme injection
