@@ -22,7 +22,7 @@ __all__ = [
     "TextBox",
     "Calendar",
     "Toggle",
-    "Tooltip",
+    "ToolTip",
     "Expander",
     "Dropdown",
     "ListItem",

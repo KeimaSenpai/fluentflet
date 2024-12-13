@@ -1,8 +1,19 @@
 tests/
+pycache/
 build.py
 flrec.py
 grid.py
-t.py
+docs.py
 flipview.py
+t.py
 git_changes_summary.md
 # changes.md
+
+__pycache__/
+.vscode/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.py[cod]
+*$py.class

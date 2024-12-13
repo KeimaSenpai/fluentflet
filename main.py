@@ -1,5 +1,5 @@
 import flet as ft
-from fluentflet.components import (
+from fluentflet import (
     Button, ButtonVariant, 
     Checkbox, CheckState,
     Slider, SliderOrientation,
@@ -15,13 +15,15 @@ from fluentflet.components import (
     ProgressRing,
     Dialog
 )
-from fluentflet.window import FluentWindow, Titlebar
-from fluentflet.utils import FluentIcon, FluentIcons, FluentIconStyle
+from fluentflet import FluentWindow, Titlebar
+from fluentflet import FluentIcon, FluentIcons, FluentIconStyle
+from fluentflet.__version__ import VERSION
+
+print(VERSION)
 
 from datetime import datetime
-from enum import Enum
+from pathlib import Path
 import inspect
-from pprint import pprint
 
 class DisplayGroup(ft.Container):
     def __init__(
@@ -194,7 +196,7 @@ class DisplayItem(ft.Container):
         
 def main(page: ft.Page):
     page.title = "Fluent Flet"
-    page.icon = "fluentflet/static/fluentflet.png"
+    page.icon = Path("fluentflet","static","fluentflet.png")
     page.window.width = 800
     page.accepts_drops = True
 
@@ -242,6 +244,7 @@ def main(page: ft.Page):
                     ft.Text("A showcase of individual Fluent Flet widgets", size=20, color="white"),
                     ft.Text("Select a component from the navigation menu to see detailed examples.", 
                            color="#808080", size=16),
+                    # ft.Text("Current fluentflet version:", VERSION_STRING)
                 ])
             )
         ])
