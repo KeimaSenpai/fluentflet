@@ -7,6 +7,8 @@
 
 <h1 align="center">
   Fluent Flet
+  </br>
+  <a href="https://pypi.org/project/fluentflet"><img alt="PyPI - Version" src="https://img.shields.io/pypi/v/fluentflet?style=for-the-badge&color=%2363cbfb"></a>
 </h1>
 
 <p align="center">
@@ -24,6 +26,24 @@
   <img src="https://img.shields.io/badge/prerelease-8FD28F" alt="logo">
 </h1>
 
+### istallation
+> [!IMPORTANT]
+> fluentflet is still in alpha version. this means that there could be bugs and unexpected behaviours
+
+- from [PyPi](https://pypi.org/project/fluentflet)
+```
+pip install fluentflet
+```
+- from source
+```
+git clone https://github.com/Bbalduzz/fluentflet.git
+
+cd fluentflet
+
+py setup.py install
+```
+
+### documentation overview
 <details>
 <summary>Table of Contents</summary>
 
@@ -593,6 +613,8 @@ custom = Slider(
 #### Constructor Parameters:
 - `design_system: FluentDesignSystem = FluentDesignSystem()`. Design system instance
 - `placeholder: str = "TextBox"`. Placeholder text
+- `prefix: str = None`: Optional text to display before the input area
+- `suffix: str = None`: Optional text to display after the input area
 - `width: int = 200`. Control width
 - `text_size: int = 14`. Font size
 - `height: int = 32`. Control height
@@ -620,6 +642,14 @@ textbox = TextBox(
 password = TextBox(
     placeholder="Password",
     password=True
+)
+
+# TextBox with prefix and suffix
+url_input = TextBox(
+    placeholder="Enter domain name",
+    prefix="https://",
+    suffix=".com",
+    width=300
 )
 
 # Textbox with actions
@@ -1095,6 +1125,28 @@ page.enable_drag_and_drop(
 
 **Purpose**: Implements a window manager with navigation, routing and state management following Fluent Design.
 
+### NavigationType (Enum)
+enum for controlling navigation layout:
+```python
+class NavigationType(Enum):
+    STANDARD = auto()  # Original layout that pushes content
+    OVERLAY = auto()   # Navigation overlays the content
+```
+
+### Example Usage:
+```python
+from fluentflet import FluentWindow, NavigationType
+
+window = FluentWindow(
+    page=page,
+    nav_type=NavigationType.OVERLAY,
+    navigation_items=[
+        {"icon": FluentIcons.HOME, "label": "Home", "route": "/home"},
+        {"icon": FluentIcons.SETTINGS, "label": "Settings", "route": "/settings"}
+    ]
+)
+```
+
 ### Classes
 
 #### FluentState
@@ -1151,6 +1203,7 @@ window.state.subscribe("theme", lambda t: print(f"Theme changed: {t}"))
       }
   ]
   ```
+- `nav_type: NavigationType = NavigationType.STANDARD`. Side navigation rail type
 - `bottom_navigation_items: Optional[List[Dict]]`. Bottom nav items
 - `selected_index: int = 0`. Initial selected nav item
 - `window_titlebar: Union[str, Titlebar]`. Window title or titlebar component

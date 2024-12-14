@@ -17,3 +17,6 @@ __pycache__/
 .Python
 *.py[cod]
 *$py.class
+
+fluentflet.egg-info
+dist/
