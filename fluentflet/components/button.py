@@ -31,8 +31,8 @@ class Button(ft.TextButton):
             ButtonVariant.DEFAULT: {
                 "bgcolor": {
                     ft.ControlState.DEFAULT: self.theme.fills.get_fill("control_fill_default"),
-                    # ft.ControlState.HOVERED: self.theme.fills.get_fill("control_fill_secondary"),
                     ft.ControlState.PRESSED: self.theme.fills.get_fill("control_fill_tertiary"),
+                    ft.ControlState.HOVERED: self.theme.fills.get_fill("control_fill_secondary"),
                     ft.ControlState.DISABLED: self.theme.fills.get_fill("control_fill_disabled")
                 },
                 "side": {
@@ -48,8 +48,8 @@ class Button(ft.TextButton):
             ButtonVariant.ACCENT: {
                 "bgcolor": {
                     ft.ControlState.DEFAULT: self.theme.colors.get_color("accent_default"),
+                    ft.ControlState.PRESSED: self.theme.colors.get_color("accent_tertiary"),
                     ft.ControlState.HOVERED: self.theme.colors.get_color("accent_secondary"),
-                    # ft.ControlState.PRESSED: self.theme.colors.get_color("accent_tertiary"),
                     ft.ControlState.DISABLED: self.theme.colors.get_color("accent_disabled")
                 },
                 "side": {
@@ -65,8 +65,8 @@ class Button(ft.TextButton):
             ButtonVariant.HYPERLINK: {
                 "bgcolor": { 
                     ft.ControlState.DEFAULT: self.theme.fills.get_fill("control_fill_transparent"),
+                    ft.ControlState.PRESSED: self.theme.fills.get_fill("control_fill_tertiary"),
                     ft.ControlState.HOVERED: self.theme.fills.get_fill("control_fill_secondary", 0.06),
-                    # ft.ControlState.PRESSED: self.theme.fills.get_fill("control_fill_tertiary"),
                     ft.ControlState.DISABLED: self.theme.fills.get_fill("control_fill_transparent")
                 },
                 "color": {

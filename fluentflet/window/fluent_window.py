@@ -60,9 +60,15 @@ window.navigate("user_profile", user_id="123")
 
 import flet as ft
 from pathlib import Path
+from enum import Enum, auto
 from fluentflet.components import ListItem, Button, ButtonVariant, ToolTip
 from fluentflet.utils import FluentIcon, FluentIcons
 from typing import Optional, Any, Callable, Union, Dict
+
+class NavigationType(Enum):
+    """Navigation layout types for FluentWindow"""
+    STANDARD = auto()  # Original layout that pushes content
+    OVERLAY = auto()   # Navigation overlays the content
 
 class NavigationDivider(ft.Container):
     def __init__(self):
@@ -297,6 +303,7 @@ class FluentWindow:
         nav_width_expanded=200,
         animation_duration=100,
         nav_item_spacing=2,
+        nav_type: NavigationType = NavigationType.STANDARD,
         show_back_button=True,
         state_manager: FluentState = FluentState
     ):
@@ -313,6 +320,11 @@ class FluentWindow:
         self._page.accepts_drops = True
         self._page.blur_effect = True
         self._page.padding = 0
+
+        self.is_nav_expanded = False
+        self.nav_width_collapsed = nav_width_collapsed
+        self.nav_width_expanded = nav_width_expanded
+        self.nav_type = nav_type
         
         
         self.colors = {
@@ -437,16 +449,15 @@ class FluentWindow:
 
     def create_layout(self, nav_width_collapsed, nav_width_expanded, 
                     animation_duration, show_back_button, selected_index):
-        """Create the main layout"""
-        # Create navigation items
+        """Create the main layout based on navigation type"""
+
         self.nav_items = []
         self._nav_item_intern = []
         
         # Track the actual index (excluding dividers) for navigation
         self.nav_index_map = {}
         actual_index = 0
-        
-        # Create top navigation items
+
         for idx, item in enumerate(self.navigation_items):
             nav_item = self.create_nav_item(item, actual_index)
             self.nav_items.append(nav_item)
@@ -455,7 +466,7 @@ class FluentWindow:
                 self.nav_index_map[actual_index] = idx
                 actual_index += 1
 
-        # Create navigation rail with scrollable list
+        # Create navigation rail content
         nav_top_controls = []
         if show_back_button:
             nav_top_controls.extend([
@@ -467,7 +478,6 @@ class FluentWindow:
                             color=self.colors["icon_color"],
                         ),
                         variant=ButtonVariant.HYPERLINK,
-                        # on_click=self.go_back,
                         disabled=False
                     ),
                     margin=ft.margin.only(top=10)
@@ -497,47 +507,60 @@ class FluentWindow:
             nav_item = self.create_nav_item(item, actual_index + idx)
             bottom_nav_items.append(nav_item)
 
-        # Create the navigation rail with top, scrollable middle, and bottom sections
-        self.nav_rail = ft.Container(
-            content=ft.Column(
-                controls=[
-                    # Top section with back button and menu toggle
-                    ft.Container(
-                        ft.Column(
-                            controls=nav_top_controls,
-                            spacing=self.nav_item_spacing,
-                            horizontal_alignment=ft.CrossAxisAlignment.START,
-                            # margin=ft.margin.only(left=5)
-                        ),
-                        margin=ft.margin.only(left=5)
-                    ),
-                    # Middle section with scrollable navigation
-                    ft.Container(
-                        content=ft.Column(
-                            controls=self.nav_items,
-                            spacing=self.nav_item_spacing,
-                            scroll=ft.ScrollMode.HIDDEN,  # Enable scrolling
-                        ),
-                        expand=True,
-                        clip_behavior=ft.ClipBehavior.ANTI_ALIAS,  # Clip overflow content
-                    ),
-                    # Bottom section
+        # Create navigation rail content
+        nav_rail_content = ft.Column(
+            controls=[
+                ft.Container(
                     ft.Column(
-                        controls=bottom_nav_items,
-                        spacing=2,
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    ) if bottom_nav_items else None
-                ],
-                spacing=0,
-                expand=True
-            ),
+                        controls=nav_top_controls,
+                        spacing=self.nav_item_spacing,
+                        horizontal_alignment=ft.CrossAxisAlignment.START,
+                    ),
+                    margin=ft.margin.only(left=5)
+                ),
+                ft.Container(
+                    content=ft.Column(
+                        controls=self.nav_items,
+                        spacing=self.nav_item_spacing,
+                        scroll=ft.ScrollMode.HIDDEN,
+                    ),
+                    expand=True,
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                ),
+                ft.Column(
+                    controls=bottom_nav_items,
+                    spacing=2,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                ) if bottom_nav_items else None
+            ],
+            spacing=0,
+            expand=True
+        )
+
+        self.nav_rail = ft.Container(
+            content=nav_rail_content,
             width=nav_width_collapsed,
             padding=ft.padding.only(left=5, right=5, bottom=10),
             bgcolor=self.colors["nav_bg"],
+            animate_opacity=ft.animation.Animation(animation_duration, "easeOut"),
+            animate_size=ft.animation.Animation(animation_duration, "easeOut"),
             animate=ft.animation.Animation(animation_duration, "easeOut"),
+            blur=None,
+            border_radius=ft.border_radius.only(
+                top_right=0,
+                bottom_right=0
+            ),
+            border=None,
+            shadow=None
+        )
+        self.nav_rail_wrapper = ft.Container(
+            content=self.nav_rail,
+            shadow=None,
+            animate=ft.animation.Animation(animation_duration, "easeOut")
         )
 
-        # Create content area
+
+        # Create the content container
         self.content_container = ft.Container(
             expand=True,
             bgcolor=self.colors["content_bg"],
@@ -551,31 +574,41 @@ class FluentWindow:
             padding=10,
         )
 
-        # Set initial selection
-        self.selected_index = selected_index
-        self.is_nav_expanded = False
-        self.nav_width_collapsed = nav_width_collapsed
-        self.nav_width_expanded = nav_width_expanded
-
-        # Create main layout
-        self.main_layout = ft.Row(
-            controls=[
-                self.nav_rail,
-                ft.Container(
-                    expand=True,
-                    content=ft.Column(
-                        controls=[
-                            ft.WindowDragArea(self.titlebar),
-                            self.content_container,
-                        ],
-                        spacing=0,
-                        expand=True,
-                    ),
-                ),
-            ],
+        main_content = ft.Container(
             expand=True,
-            spacing=0,
+            content=ft.Column(
+                controls=[
+                    ft.WindowDragArea(self.titlebar),
+                    self.content_container,
+                ],
+                spacing=0,
+                expand=True,
+            ),
+            margin = ft.margin.only(left=1) if self.nav_type == NavigationType.STANDARD else ft.margin.only(left=self.nav_width_collapsed)
         )
+
+        if self.nav_type == NavigationType.OVERLAY:
+            self.main_layout = ft.Stack(
+                controls=[
+                    main_content,
+                    ft.Container(
+                        content=self.nav_rail_wrapper,
+                        left=0,
+                        top=0,
+                        bottom=0,
+                    ),
+                ],
+                expand=True,
+            )
+        else:  # NavigationType.STANDARD
+            self.main_layout = ft.Row(
+                controls=[
+                    self.nav_rail_wrapper,
+                    main_content,
+                ],
+                expand=True,
+                spacing=0,
+            )
 
         # Add to page
         self._page.add(self.main_layout)
@@ -601,26 +634,42 @@ class FluentWindow:
         )
 
     def toggle_navigation_panel(self, e=None):
+        """Toggle navigation panel based on navigation type"""
         self.is_nav_expanded = not self.is_nav_expanded
         
         if self.is_nav_expanded:
             self.nav_rail.width = self.nav_width_expanded
-            self.nav_rail.content.horizontal_alignment = ft.CrossAxisAlignment.START
-            
-            for item in self._nav_item_intern:
-                if isinstance(item, ft.Row):  # Skip dividers
-                    item.controls[1].opacity = 1
-                    item.alignment = ft.MainAxisAlignment.START
-                    item.update()
+            self.nav_rail.border_radius = ft.border_radius.only(
+                top_right=8,
+                bottom_right=8
+            )
+            self.nav_rail.blur = ft.Blur(20, 20, ft.BlurTileMode.MIRROR)
+            self.nav_rail.border = ft.border.all(1, "#313131")
+            self.nav_rail_wrapper.shadow = ft.BoxShadow(
+                spread_radius=0,
+                blur_radius=8,
+                color=ft.colors.with_opacity(0.2, "#000000"),
+                offset=ft.Offset(2, 0)
+            )
         else:
             self.nav_rail.width = self.nav_width_collapsed
-            self.nav_rail.content.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-            
-            for item in self._nav_item_intern:
-                if isinstance(item, ft.Row):  # Skip dividers
-                    item.controls[1].opacity = 0
-                    item.alignment = ft.MainAxisAlignment.CENTER
-                    item.update()
+            self.nav_rail.bgcolor = self.colors["nav_bg"]
+            self.nav_rail.blur = None
+            self.nav_rail.border_radius = ft.border_radius.only(
+                top_right=0,
+                bottom_right=0
+            )
+            self.nav_rail.border = None
+            self.nav_rail_wrapper.shadow = None
+        
+
+        for item in self._nav_item_intern:
+            if isinstance(item, ft.Row):
+                item.controls[1].opacity = 1 if self.is_nav_expanded else 0
+                item.alignment = (ft.MainAxisAlignment.START 
+                                if self.is_nav_expanded 
+                                else ft.MainAxisAlignment.CENTER)
+                item.update()
         
         self.nav_rail.update()
 

@@ -15,7 +15,7 @@ from fluentflet import (
     ProgressRing,
     Dialog
 )
-from fluentflet import FluentWindow, Titlebar
+from fluentflet import FluentWindow, Titlebar, NavigationType
 from fluentflet import FluentIcon, FluentIcons, FluentIconStyle
 from fluentflet.__version__ import VERSION
 
@@ -206,8 +206,9 @@ def main(page: ft.Page):
             title="Fluent Flet Components", 
             icon=ft.Image(src="fluentflet/static/fluentflet.png", width=18, height=18)
         ),
+        nav_type = NavigationType.OVERLAY,
         navigation_items=[
-            {"icon": FluentIcons.HOME, "label": "Home", "route": "/"},
+            {"icon": FluentIcons.HOME, "label": "Home", "route": "/home"},
             {"icon": FluentIcons.SYMBOLS, "label": "Fluent icons", "route": "/icons"},
             {"type": "divider"},
             {"icon": FluentIcons.CONTROL_BUTTON, "label": "Button", "route": "/components/button"},
@@ -434,6 +435,15 @@ def main(page: ft.Page):
                     width=300, 
                     password=True
                 )
+            ),
+            DisplayItem(
+                title="TextBox with prefix and suffix",
+                content=TextBox(
+                    placeholder="Enter domain name",
+                    prefix="https://",
+                    suffix=".com",
+                    width=300
+                )
             )
         ])
 
@@ -658,9 +668,12 @@ def main(page: ft.Page):
                     variant=ButtonVariant.ACCENT, 
                     expand=True,
                     on_click=lambda e: print("Save clicked")),
+                Button("Don't Save",
+                       expand=True,
+                       on_click=lambda e: dialog.close_dialog()),
                 Button("Cancel", 
                     expand=True,
-                    on_click=lambda e: dialog.close_dialog())
+                    on_click=lambda e: dialog.close_dialog()),
             ]
             
             dialog = Dialog(
@@ -686,138 +699,145 @@ def main(page: ft.Page):
 
     @window.route("/icons")
     def create_icons_browser():
+        # Use a dataclass for better performance and cleaner code
+        from dataclasses import dataclass
+        
+        @dataclass
         class SelectedIcon:
-            def __init__(self):
-                self.value = None
-                self.name = None
-                self.python_enum = None
+            value: str = None
+            name: str = None
+            python_enum: str = None
         
         selected_icon = SelectedIcon()
-
+        icon_availability_cache = {}
+        
+        # pre-calculate common styles
+        TILE_PADDING = ft.padding.only(top=15, bottom=10, right=15, left=15)
+        COMMON_BGCOLOR = ft.Colors.with_opacity(0.578, "#1e1e1e")
+        DETAILS_BGCOLOR = ft.Colors.with_opacity(0.578, "#1a1a1a")
+        
         def show_icon_details(icon: FluentIcons, style: FluentIconStyle):
-            details_panel.visible = True
-            icon_text = details_panel.content.controls[0]
-            icon_previews = details_panel.content.controls[1]
-            details = details_panel.content.controls[2]
-
+            if not details_panel.visible:
+                details_panel.visible = True
+            
+            # update selected icon data all at once
             selected_icon.value = icon.value
             selected_icon.name = icon.name
             selected_icon.python_enum = f"FluentIcons.{icon.name}"
             
+            # batch updates for better performance
+            updates = []
+            icon_text = details_panel.content.controls[0]
+            icon_previews = details_panel.content.controls[1]
+            details = details_panel.content.controls[2]
+            
             icon_text.value = icon.value
             
-            regular_preview = icon_previews.controls[0]
-            filled_preview = icon_previews.controls[1]
+            # update previews using cached availability
+            for preview, icon_style, label in [
+                (icon_previews.controls[0], FluentIconStyle.REGULAR, "Regular"),
+                (icon_previews.controls[1], FluentIconStyle.FILLED, "Filled")
+            ]:
+                cache_key = (icon.value, icon_style)
+                if cache_key not in icon_availability_cache:
+                    try:
+                        FluentIcon(icon, style=icon_style)
+                        icon_availability_cache[cache_key] = True
+                    except FileNotFoundError:
+                        icon_availability_cache[cache_key] = False
+                
+                if icon_availability_cache[cache_key]:
+                    preview.content = ft.Column([
+                        FluentIcon(icon, style=icon_style, size=48),
+                        ft.Text(label, size=12, color="#666666")
+                    ], alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                else:
+                    preview.content = ft.Text("Not available", size=12, color="#666666")
             
-            try:
-                regular_preview.content = ft.Column([
-                    FluentIcon(icon, style=FluentIconStyle.REGULAR, size=48),
-                    ft.Text("Regular", size=12, color="#666666")
-                ], alignment=ft.MainAxisAlignment.CENTER,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-            except FileNotFoundError:
-                regular_preview.content = ft.Text("Not available", size=12, color="#666666")
 
-            try:
-                filled_preview.content = ft.Column([
-                    FluentIcon(icon, style=FluentIconStyle.FILLED, size=48),
-                    ft.Text("Filled", size=12, color="#666666")
-                ], alignment=ft.MainAxisAlignment.CENTER,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-            except FileNotFoundError:
-                filled_preview.content = ft.Text("Not available", size=12, color="#666666")
-
-            icon_value = icon.value
-            icon_name = icon.name
-            icon_python =  f"FluentIcons.{icon.name}"
-            
             details.controls[1].controls[0].value = icon.value
             details.controls[3].controls[0].value = icon.name
-            details.controls[5].controls[0].value = f"FluentIcons.{icon.name}"
+            details.controls[5].controls[0].value = selected_icon.python_enum
             
             details_panel.update()
 
-        def copy_value(e):
-            if state.icon_value:
-                page.set_clipboard(selected_icon.value)
-
-        def copy_name(e):
-            if state.icon_name:
-                page.set_clipboard(selected_icon.name)
-
-        def copy_python(e):
-            if state.icon_python:
-                page.set_clipboard(selected_icon.python_enum)
-
         def select_icon(event, icon: FluentIcons, style: FluentIconStyle):
-            for container in icon_grid.controls:
-                if container:
-                    container.border = None
+            [setattr(container, 'border', None) for container in icon_grid.controls if container]
             event.control.border = ft.border.all(2, "#62cdfe")
+            
             icon_grid.update()
             show_icon_details(icon, style)
 
         def create_icon_tile(icon: FluentIcons, style: FluentIconStyle) -> ft.Container:
-            try:
-                return ft.Container(
-                    content=ft.Column(
-                        [
-                            FluentIcon(icon, style=style),
-                            ft.Text(icon.value, size=12, text_align=ft.TextAlign.CENTER)
-                        ],
-                        spacing=5,
-                        alignment=ft.MainAxisAlignment.CENTER,
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    ),
-                    padding=ft.padding.only(top=15, bottom=10, right=15, left=15),
-                    bgcolor=ft.Colors.with_opacity(0.578, "#1e1e1e"),
-                    border_radius=4,
-                    on_click=lambda e: select_icon(e, icon, style)
-                )
-            except FileNotFoundError:
+            cache_key = (icon.value, style)
+            if cache_key not in icon_availability_cache:
+                try:
+                    FluentIcon(icon, style=style)
+                    icon_availability_cache[cache_key] = True
+                except FileNotFoundError:
+                    icon_availability_cache[cache_key] = False
+                    return None
+            
+            if not icon_availability_cache[cache_key]:
                 return None
+                
+            return ft.Container(
+                content=ft.Column(
+                    [
+                        FluentIcon(icon, style=style),
+                        ft.Text(icon.value, size=12, text_align=ft.TextAlign.CENTER)
+                    ],
+                    spacing=5,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+                padding=TILE_PADDING,
+                bgcolor=COMMON_BGCOLOR,
+                border_radius=4,
+                on_click=lambda e: select_icon(e, icon, style)
+            )
 
         def filter_icons(e):
             search_term = e.control.value.lower()
-            for container in icon_grid.controls:
-                if container:
-                    icon_name = container.content.controls[1].value
-                    container.visible = search_term in icon_name.lower()
+            [setattr(container, 'visible', search_term in container.content.controls[1].value.lower()) 
+            for container in icon_grid.controls if container]
             icon_grid.update()
 
-        # Left side - Icon Browser
+        search_box = TextBox(
+            placeholder="Search icons",
+            width=1000,
+            on_change=filter_icons
+        )
+
+        icon_grid = ft.GridView(
+            expand=True,
+            max_extent=100,
+            spacing=10,
+            run_spacing=10,
+        )
+
+        # create panels with pre-calculated styles
         left_panel = ft.Column([
             ft.Text("Icons", size=30, weight=ft.FontWeight.BOLD),
-            TextBox(
-                placeholder="Search icons",
-                width=1000,
-                on_change=lambda e: filter_icons(e)
-            ),
-            icon_grid := ft.GridView(
-                expand=True,
-                max_extent=100,
-                spacing=10,
-                run_spacing=10,
-            )
+            search_box,
+            icon_grid
         ], expand=True)
 
-        # Right side - Details Panel
         details_panel = ft.Container(
             content=ft.Column([
                 ft.Text("", size=24, weight=ft.FontWeight.BOLD),
                 ft.Row([
                     ft.Container(
-                        content=None,
                         padding=20,
-                        bgcolor=ft.Colors.with_opacity(0.578, "#1e1e1e"),
+                        bgcolor=COMMON_BGCOLOR,
                         border_radius=4,
                         width=100,
                         height=100,
                     ),
                     ft.Container(
-                        content=None,
                         padding=20,
-                        bgcolor=ft.Colors.with_opacity(0.578, "#1e1e1e"),
+                        bgcolor=COMMON_BGCOLOR,
                         border_radius=4,
                         width=100,
                         height=100,
@@ -850,30 +870,22 @@ def main(page: ft.Page):
                             variant=ButtonVariant.DEFAULT,
                             on_click=lambda _: page.set_clipboard(selected_icon.python_enum)
                         )
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN) 
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
                 ], spacing=20)
             ], spacing=30),
             width=400,
-            bgcolor=ft.Colors.with_opacity(0.578, "#1a1a1a"),
+            bgcolor=DETAILS_BGCOLOR,
             padding=30,
             border_radius=4,
+            visible=False
         )
 
-        details_panel.visible = False
-
-        # Layout with Row
-        layout = ft.Row([
-            left_panel,
-            details_panel
-        ], expand=True)
-
-        # Load icons
         icons = [create_icon_tile(icon, FluentIconStyle.REGULAR) for icon in FluentIcons]
         icon_grid.controls = [icon for icon in icons if icon is not None]
 
-        return layout
+        return ft.Row([left_panel, details_panel], expand=True)
 
     # Set initial route
-    window.navigate("/")
+    window.navigate("/home")
 
 ft.app(target=main)

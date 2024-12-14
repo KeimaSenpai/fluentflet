@@ -3,11 +3,11 @@ pycache/
 build.py
 flrec.py
 grid.py
-docs.py
 flipview.py
 t.py
+docs.py
 git_changes_summary.md
-# changes.md
+changes.md
 
 __pycache__/
 .vscode/

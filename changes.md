@@ -1,44 +1,52 @@
-feat: version 0.0.1.4-dev
+feat: version 0.2.0alpha1
 
-Added new features to enhance component functionality and user interaction.
+### `TextBox` Component
+- Added new features:
+  - `prefix` text support
+  - `suffix` text support
+- Added dynamic padding calculations based on prefix/suffix content
+- Enhanced focus/blur handling:
+  - Added opacity control for hint text
+  - Improved hint text color management
+  - Added explicit handling for hint text style changes during focus/blur states
 
-Components changed:
-- `Calendar`: Added blackout dates feature to disable specific dates
-- `TextBox`: Added support for action buttons with tooltips
-- `FluentWindow`: Added state management system and template-based routing
-- `FluentState`: New class for centralized state management
+### `Button` Component
+- Reorganized state handling:
+  - Reordered control states for better consistency. Flet version must be > `0.25.2` ([see why](https://github.com/flet-dev/flet/pull/4556))
+- State configurations now properly implement:
+  - Hover states
+  - Pressed states
+  - Default states
+  - Disabled states
 
-Implementation details:
-- Calendar supports array of blocked dates with visual indicators
-- TextBox supports multiple action buttons with icons and tooltips
-- Added path-based routing with parameter support
-- Added session-based state persistence
+### Navigation System
+- Added new `NavigationType` enum with two modes:
+  - `STANDARD`: Original layout that pushes content
+  - `OVERLAY`: Navigation overlays the content
+- Enhanced navigation panel styling:
+  - Added blur effects for expanded state
+  - Implemented border radius adjustments
+  - Added shadow effects
+  - Improved animation handling
 
----
+### Window System
+- Added `NavigationType` to exported symbols
+- Modified default window behavior to support new navigation types
+- Enhanced window layout management for both standard and overlay navigation modes
 
-Refactored components to use FluentDesignSystem for consistent styling and theming.
+## Infrastructure Changes
 
-Components changed:
-- `Button`: Integrated design system colors and animations
-- `Calendar`: Updated to use theme colors and properties
-- `Checkbox`: Migrated to design system color scheme
-- `Expander`: Updated animations and layout handling
-- `ListItem`: Improved selection handling with theme colors
-- `Radio`: Updated state management with theme properties
-- `Slider`: Fixed positioning and improved theme integration
-- `TextBox`: Improved styling and state management
-- `Toggle`: Updated transitions and theme colors
-- `fluent_design_system.py`: Improved color management system
+### Dependencies
+- Updated Flet dependency to match the new pypi library structure:
+  - Old: `flet>=0.25.1`
+  - New: `flet[all]>=0.25.2`
 
-Implementation details:
-- Changed color format from HSL to hex/rgba
-- Added theme switching support
-- Added font management system
-- Improved component documentation
-- Added type hints
-- Standardized animation durations
+## API Changes and Deprecations
+- Removed **deprecated** `right_icon` and `right_action` properties from `TextBox`
+- Changed method of handling icon actions in TextBox to new action system
+- Modified window navigation behavior to support new navigation types
 
-Breaking changes:
-- Components require FluentDesignSystem instance
-- Updated theme color format
-- Modified component constructors
+## Performance Improvements
+- Implemented icon availability caching in icon browser
+- Added pre-calculated styles for common UI elements
+- Optimized update patterns in components to reduce unnecessary rerenders

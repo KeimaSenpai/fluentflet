@@ -202,7 +202,7 @@ def main(page: ft.Page):
                                         TextBox(
                                             placeholder="TextBox", 
                                             width=500, 
-                                            right_icon=FluentIcon(name=FluentIcons.EYE_SHOW, style=FluentIconStyle.FILLED, size=16), 
+                                            # right_icon=FluentIcon(name=FluentIcons.EYE_SHOW, style=FluentIconStyle.FILLED, size=16), 
                                             password=True
                                         )
                                     ])
@@ -295,8 +295,8 @@ def main(page: ft.Page):
                                         text_box := TextBox(
                                             width=200,
                                             placeholder="0.3",
-                                            right_icon=FluentIcon(FluentIcons.ADD, color="#ffffff", size=14),
-                                            right_action=increment_value,
+                                            # right_icon=FluentIcon(FluentIcons.ADD, color="#ffffff", size=14),
+                                            # right_action=increment_value,
                                             on_change=lambda e: setattr(pr, 'value', float(e.data) if e.data.replace('.','',1).isdigit() else pr.value)
                                         )
                                     ])

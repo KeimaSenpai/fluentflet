@@ -13,6 +13,8 @@ class TextBox(ft.Container):
         height: int = 32,
         password: bool = False,
         actions_visible: bool = True,
+        prefix: str = None,
+        suffix: str = None,
         **kwargs
     ):
         # Keep the kwargs handling for TextField
@@ -31,10 +33,31 @@ class TextBox(ft.Container):
         self._action = None
         self.is_password = password
         
-        # Calculate right padding based on actions
+        # padding based on actions and prefix/suffix
         right_padding = 40 if password else 10
+        left_padding = 10
         
-        # Create the text field
+        self.prefix_text = None
+        if prefix:
+            self.prefix_text = ft.Text(
+                value=prefix,
+                size=text_size,
+                color=self.theme.colors.get_color("text_tertiary"),
+                weight=ft.FontWeight.W_400,
+            )
+            left_padding = len(prefix) * (text_size * 0.6) + 15  # Approximate character width
+        
+        self.suffix_text = None
+        if suffix:
+            self.suffix_text = ft.Text(
+                value=suffix,
+                size=text_size,
+                color=self.theme.colors.get_color("text_tertiary"),
+                weight=ft.FontWeight.W_400,
+            )
+            right_padding += len(suffix) * (text_size * 0.6) + 5  # Approximate character width
+        
+        # Create the text field with modified hint style
         self.textfield = ft.TextField(
             border=ft.InputBorder.NONE,
             height=height,
@@ -49,11 +72,11 @@ class TextBox(ft.Container):
             hint_style=ft.TextStyle(
                 color=self.theme.colors.get_color("text_tertiary"),
                 size=text_size,
-                weight=ft.FontWeight.W_400
+                weight=ft.FontWeight.W_400,
             ),
             on_focus=self._handle_focus,
             on_blur=self._handle_blur,
-            content_padding=ft.padding.only(left=10, right=right_padding, bottom=7),
+            content_padding=ft.padding.only(left=left_padding, right=right_padding, bottom=7),
             **textfield_kwargs
         )
 
@@ -86,6 +109,26 @@ class TextBox(ft.Container):
             ),
             self.actions_container
         ]
+
+        # Add prefix label if provided
+        if self.prefix_text:
+            stack_controls.append(
+                ft.Container(
+                    content=self.prefix_text,
+                    left=10,
+                    top=(height - text_size) / 2 - 2,
+                )
+            )
+
+        # Add suffix label if provided
+        if self.suffix_text:
+            stack_controls.append(
+                ft.Container(
+                    content=self.suffix_text,
+                    right=(40 if password else 10),
+                    top=(height - text_size) / 2 - 2,
+                )
+            )
 
         if password:
             self.button = Button(
@@ -128,6 +171,30 @@ class TextBox(ft.Container):
         elif self._action:
             self._action(e)
 
+    def _handle_focus(self, e):
+        self.bgcolor = self.theme.fills.get_fill("control_fill_input_active")
+        self.bottom_border.bgcolor = self.theme.colors.get_color("accent_default")
+        self.bottom_border.height = 1.5
+        # Update hint text color when focused
+        self.textfield.hint_style.color = self.theme.colors.get_color("text_tertiary")
+        self.textfield.hint_style.opacity = 1.0
+        if not self.actions_visible:
+            self.actions_row.visible = True
+            self.actions_row.update()
+        self.update()
+
+    def _handle_blur(self, e):
+        self.bgcolor = self.default_bgcolor
+        self.bottom_border.bgcolor = self.theme.colors.get_color("text_tertiary")
+        self.bottom_border.height = 1
+        # Update hint text color when blurred
+        self.textfield.hint_style.color = self.theme.colors.get_color("text_secondary")
+        self.textfield.hint_style.opacity = 0.8
+        if not self.actions_visible:
+            self.actions_row.visible = False
+            self.actions_row.update()
+        self.update()
+
     def add_action(self, icon: FluentIcons, on_click=None, tooltip: str = None):
         """Add an action button to the textbox."""
         button = Button(
@@ -164,24 +231,6 @@ class TextBox(ft.Container):
     @action.setter
     def action(self, func):
         self._action = func
-
-    def _handle_focus(self, e):
-        self.bgcolor = self.theme.fills.get_fill("control_fill_input_active")
-        self.bottom_border.bgcolor = self.theme.colors.get_color("accent_default")
-        self.bottom_border.height = 1.5
-        if not self.actions_visible:
-            self.actions_row.visible = True
-            self.actions_row.update()
-        self.update()
-
-    def _handle_blur(self, e):
-        self.bgcolor = self.default_bgcolor
-        self.bottom_border.bgcolor = self.theme.colors.get_color("text_tertiary")
-        self.bottom_border.height = 1
-        if not self.actions_visible:
-            self.actions_row.visible = False
-            self.actions_row.update()
-        self.update()
 
     @property
     def value(self):
