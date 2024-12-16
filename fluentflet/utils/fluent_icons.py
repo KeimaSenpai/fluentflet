@@ -1509,6 +1509,10 @@ class FluentIcons(Enum):
     ZOOM_OUT = "zoom_out"
 
 
+ICON_TEMPLATE = "ic_fluent_{name}_{size}_{style}.svg"
+ICON_SIZE = "24"
+
+
 class FluentIcon(ft.Image):
     def __init__(
         self,
@@ -1518,8 +1522,12 @@ class FluentIcon(ft.Image):
         size: int = 24,
     ):
         if name in FluentIcons:
-            icon_path = Path(
-                f"fluentflet/static/icons/ic_fluent_{name.value}_24_{style.value}.svg"
+            icon_path = Path(__file__).parent.joinpath(
+                "static",
+                "icons",
+                ICON_TEMPLATE.format(
+                    name=name.value, size=ICON_SIZE, style=style.value
+                ),
             )
             with open(icon_path, "r") as f:
                 svg_content = f.read()
