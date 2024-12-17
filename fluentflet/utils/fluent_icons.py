@@ -1522,7 +1522,7 @@ class FluentIcon(ft.Image):
         size: int = 24,
     ):
         if name in FluentIcons:
-            icon_path = Path(__file__).parent.joinpath(
+            icon_path = Path(__file__).parent.parent.joinpath(
                 "static",
                 "icons",
                 ICON_TEMPLATE.format(
