@@ -20,3 +20,6 @@ __pycache__/
 
 fluentflet.egg-info
 dist/
+
+storage/
+*.cpython-312.pyc
