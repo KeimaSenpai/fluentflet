@@ -98,7 +98,7 @@ class DisplayItem(ft.Container):
         ft.Container(
             content=ft.Text(
                 value="", #source_code,
-                color=ft.colors.WHITE70,
+                color=ft.Colors.WHITE70,
                 size=12,
                 selectable=True
             ),
@@ -290,7 +290,7 @@ def main(page: ft.Page):
             {"type": "divider"},
             {"icon": FluentIcons.SETTINGS, "label": "Settings", "route": "/settings"},
         ],
-        colors={
+        Colors={
             "nav_bg": "#1F1F1F",
             "content_bg": "#282828",
         },

@@ -85,7 +85,7 @@ def _apply_blur(self):
             ctypes.windll.user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data))
 
             # Apply dark mode
-            data.Attribute = 26  # WCA_USEDARKMODECOLORS
+            data.Attribute = 26  # WCA_USEDARKMODEColors
             ctypes.windll.user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data))
 
             # Add rounded corners

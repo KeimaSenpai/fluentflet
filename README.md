@@ -1207,7 +1207,7 @@ window.state.subscribe("theme", lambda t: print(f"Theme changed: {t}"))
 - `bottom_navigation_items: Optional[List[Dict]]`. Bottom nav items
 - `selected_index: int = 0`. Initial selected nav item
 - `window_titlebar: Union[str, Titlebar]`. Window title or titlebar component
-- `colors: Optional[Dict]`. Color overrides
+- `Colors: Optional[Dict]`. Color overrides
   ```python
   {
       "nav_bg": "#1F1F1F",

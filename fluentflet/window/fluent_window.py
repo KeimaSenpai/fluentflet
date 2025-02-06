@@ -315,7 +315,7 @@ class FluentWindow:
         bottom_navigation_items=None,
         selected_index=0,
         window_titlebar: Union[str, Titlebar] = "Fluent Flet",
-        colors=None,
+        Colors=None,
         nav_width_collapsed=50,
         nav_width_expanded=200,
         animation_duration=100,
@@ -351,7 +351,7 @@ class FluentWindow:
         self.nav_width_expanded = nav_width_expanded
         self.nav_type = nav_type
 
-        self.colors = {
+        self.Colors = {
             "nav_bg": "#1F1F1F",
             "content_bg": "#282828",
             "title_bar_bg": "#1F1F1F",
@@ -359,15 +359,15 @@ class FluentWindow:
             "text_color": "white",
             "hover_color": "#c42b1c",
         }
-        if colors:
-            self.colors.update(colors)
+        if Colors:
+            self.Colors.update(Colors)
         if self._page.blur_effect:
-            self.colors["content_bg"] = ft.colors.with_opacity(
-                0.3, self.colors["content_bg"]
+            self.Colors["content_bg"] = ft.Colors.with_opacity(
+                0.3, self.Colors["content_bg"]
             )
-            self.colors["nav_bg"] = ft.colors.with_opacity(0.3, self.colors["nav_bg"])
+            self.Colors["nav_bg"] = ft.Colors.with_opacity(0.3, self.Colors["nav_bg"])
 
-        self._page.bgcolor = self.colors["nav_bg"]
+        self._page.bgcolor = self.Colors["nav_bg"]
 
         # Initialize main layout components
         self.nav_item_spacing = nav_item_spacing
@@ -524,7 +524,7 @@ class FluentWindow:
                             content=FluentIcon(
                                 FluentIcons.ARROW_LEFT,
                                 size=18,
-                                color=self.colors["icon_color"],
+                                color=self.Colors["icon_color"],
                             ),
                             variant=ButtonVariant.HYPERLINK,
                             disabled=False,
@@ -541,7 +541,7 @@ class FluentWindow:
                     content=FluentIcon(
                         FluentIcons.TEXT_ALIGN_JUSTIFY,
                         size=18,
-                        color=self.colors["icon_color"],
+                        color=self.Colors["icon_color"],
                     ),
                     on_click=lambda e: self.toggle_navigation_panel(e),
                     variant=ButtonVariant.HYPERLINK,
@@ -595,7 +595,7 @@ class FluentWindow:
             content=nav_rail_content,
             width=nav_width_collapsed,
             padding=ft.padding.only(left=5, right=5, bottom=10),
-            bgcolor=self.colors["nav_bg"],
+            bgcolor=self.Colors["nav_bg"],
             animate_opacity=ft.animation.Animation(animation_duration, "easeOut"),
             animate_size=ft.animation.Animation(animation_duration, "easeOut"),
             animate=ft.animation.Animation(animation_duration, "easeOut"),
@@ -613,7 +613,7 @@ class FluentWindow:
         # Create the content container
         self.content_container = ft.Container(
             expand=True,
-            bgcolor=self.colors["content_bg"],
+            bgcolor=self.Colors["content_bg"],
             border_radius=ft.border_radius.only(top_left=10),
             content=ft.Column(
                 controls=[],
@@ -671,10 +671,10 @@ class FluentWindow:
     def create_nav_row(self, icon, label):
         return ft.Row(
             controls=[
-                FluentIcon(icon, size=18, color=self.colors["icon_color"]),
+                FluentIcon(icon, size=18, color=self.Colors["icon_color"]),
                 ft.Text(
                     label,
-                    color=self.colors["text_color"],
+                    color=self.Colors["text_color"],
                     size=14,
                     opacity=0,
                 ),
@@ -697,12 +697,12 @@ class FluentWindow:
             self.nav_rail_wrapper.shadow = ft.BoxShadow(
                 spread_radius=0,
                 blur_radius=8,
-                color=ft.colors.with_opacity(0.2, "#000000"),
+                color=ft.Colors.with_opacity(0.2, "#000000"),
                 offset=ft.Offset(2, 0),
             )
         else:
             self.nav_rail.width = self.nav_width_collapsed
-            self.nav_rail.bgcolor = self.colors["nav_bg"]
+            self.nav_rail.bgcolor = self.Colors["nav_bg"]
             self.nav_rail.blur = None
             self.nav_rail.border_radius = ft.border_radius.only(
                 top_right=0, bottom_right=0

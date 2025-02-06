@@ -108,8 +108,8 @@ class Toast(ft.Container):
         if isinstance(action_type, str):
             action_type = ToastActionType(action_type)
 
-        # Get colors based on severity
-        colors = self.get_colors(severity)
+        # Get Colors based on severity
+        Colors = self.get_Colors(severity)
 
         # Create content based on variant and action type
         content = self.create_content(
@@ -117,7 +117,7 @@ class Toast(ft.Container):
             variant,
             title,
             message,
-            colors,
+            Colors,
             action_type,
             action_text,
             action_url,
@@ -132,8 +132,8 @@ class Toast(ft.Container):
 
         super().__init__(
             content=content,
-            bgcolor=colors["bgcolor"],
-            border=ft.border.all(1, colors["border_color"]),
+            bgcolor=Colors["bgcolor"],
+            border=ft.border.all(1, Colors["border_color"]),
             border_radius=4,
             width=kwargs.get("width", 460),
             height=height,
@@ -149,10 +149,10 @@ class Toast(ft.Container):
         self.initial_offset = offset
 
     @staticmethod
-    def get_colors(severity):
+    def get_Colors(severity):
         return ToastColors[severity.name].value["dark"]
 
-    def create_action_button(self, action_type, text, url, on_action, colors):
+    def create_action_button(self, action_type, text, url, on_action, Colors):
         if action_type == ToastActionType.NONE:
             return None
 
@@ -161,7 +161,7 @@ class Toast(ft.Container):
                 text=text,
                 url=url,
                 style=ft.ButtonStyle(
-                    color=colors["text_color"],
+                    color=Colors["text_color"],
                 ),
             )
 
@@ -169,7 +169,7 @@ class Toast(ft.Container):
             text=text,
             on_click=on_action,
             style=ft.ButtonStyle(
-                color=colors["text_color"],
+                color=Colors["text_color"],
             ),
         )
 
@@ -179,7 +179,7 @@ class Toast(ft.Container):
         variant,
         title,
         message,
-        colors,
+        Colors,
         action_type,
         action_text,
         action_url,
@@ -191,7 +191,7 @@ class Toast(ft.Container):
             ft.Icon(
                 name=icon,
                 size=20,
-                color=colors["icon_color"],
+                color=Colors["icon_color"],
             )
             if icon
             else None
@@ -211,14 +211,14 @@ class Toast(ft.Container):
                     controls=[
                         ft.Text(
                             title,
-                            color=colors["text_color"],
+                            color=Colors["text_color"],
                             size=14,
                             weight=ft.FontWeight.W_500,
                         ),
                         (
                             ft.Text(
                                 message,
-                                color=colors["text_color"],
+                                color=Colors["text_color"],
                                 size=14,
                             )
                             if message
@@ -235,14 +235,14 @@ class Toast(ft.Container):
                 controls=[
                     ft.Text(
                         title,
-                        color=colors["text_color"],
+                        color=Colors["text_color"],
                         size=14,
                         weight=ft.FontWeight.W_500,
                     ),
                     (
                         ft.Text(
                             message,
-                            color=colors["text_color"],
+                            color=Colors["text_color"],
                             size=14,
                         )
                         if message
@@ -434,20 +434,20 @@ class Toaster:
         action_url=None,
         on_action=None,
     ):
-        colors = ToastColors[severity.name].value["dark"]
+        Colors = ToastColors[severity.name].value["dark"]
         toast.content = toast.create_content(
             severity,
             variant,
             message,
             description,
-            colors,
+            Colors,
             action_type,
             action_text,
             action_url,
             on_action,
         )
-        toast.bgcolor = colors["bgcolor"]
-        toast.border = ft.border.all(1, colors["border_color"])
+        toast.bgcolor = Colors["bgcolor"]
+        toast.border = ft.border.all(1, Colors["border_color"])
         self.page.update()
         sleep(3)
         self.remove_toast(toast, position)

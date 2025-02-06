@@ -316,13 +316,13 @@ class SystemColors:
 
 @dataclass
 class Theme:
-    colors: ThemeColors = None
+    Colors: ThemeColors = None
     fills: ControlFills = None
     backgrounds: BackgroundProperties = None
 
     def get(self, property_name: str, opacity: float = None) -> str:
         # Try each category in order
-        for category in [self.backgrounds, self.fills, self.colors]:
+        for category in [self.backgrounds, self.fills, self.Colors]:
             if hasattr(category, property_name):
                 if opacity is not None:
                     # Use the category's specific get method with opacity
@@ -337,7 +337,7 @@ class Theme:
 
     def __getattr__(self, name: str):
         # Try each category in order
-        for category in [self.backgrounds, self.fills, self.colors]:
+        for category in [self.backgrounds, self.fills, self.Colors]:
             if hasattr(category, name):
                 return getattr(category, name)
         raise AttributeError(f"Property {name} not found in theme")
@@ -345,25 +345,25 @@ class Theme:
 
 @dataclass
 class LightTheme(Theme):
-    colors: ThemeColors = field(default_factory=LightThemeColors)
+    Colors: ThemeColors = field(default_factory=LightThemeColors)
     fills: ControlFills = field(default_factory=LightControlFills)
     backgrounds: BackgroundProperties = field(default_factory=LightBackgrounds)
 
 
 @dataclass
 class DarkTheme(Theme):
-    colors: ThemeColors = field(default_factory=DarkThemeColors)
+    Colors: ThemeColors = field(default_factory=DarkThemeColors)
     fills: ControlFills = field(default_factory=DarkControlFills)
     backgrounds: BackgroundProperties = field(default_factory=DarkBackgrounds)
 
 
 @dataclass
 class FluentDesignSystem:
-    accent_colors: AccentColors = field(default_factory=AccentColors)
+    accent_Colors: AccentColors = field(default_factory=AccentColors)
     font_families: FontFamilies = field(default_factory=FontFamilies)
     font_sizes: FontSizes = field(default_factory=FontSizes)
     control_properties: ControlProperties = field(default_factory=ControlProperties)
     light_theme: LightTheme = field(default_factory=LightTheme)
     dark_theme: DarkTheme = field(default_factory=DarkTheme)
-    system_colors: SystemColors = field(default_factory=SystemColors)
+    system_Colors: SystemColors = field(default_factory=SystemColors)
     shadows: Shadows = field(default_factory=Shadows)

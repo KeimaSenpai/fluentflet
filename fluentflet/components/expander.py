@@ -33,7 +33,7 @@ class Expander(ft.Container):
                     self.design_system.font_sizes.body_font_size.replace("px", "")
                 ),
                 font_family=self.design_system.font_families.font_family_text,
-                color=self.theme.colors.get_color("text_primary"),
+                color=self.theme.Colors.get_color("text_primary"),
             )
         )
         self._content = content
@@ -120,21 +120,21 @@ class Expander(ft.Container):
         )
 
     def update_theme(self, is_dark_mode: bool):
-        """Update expander theme colors"""
+        """Update expander theme Colors"""
         self.theme = (
             self.design_system.dark_theme
             if is_dark_mode
             else self.design_system.light_theme
         )
 
-        # Update header colors
+        # Update header Colors
         if isinstance(self._header, ft.Text):
-            self._header.color = self.theme.colors.get_color("text_primary")
+            self._header.color = self.theme.Colors.get_color("text_primary")
 
         # Update expand icon theme
         self._expand_icon.update_theme(is_dark_mode)
 
-        # Update container colors
+        # Update container Colors
         self._content_container.bgcolor = self.theme.fills.get_fill(
             "control_fill_tertiary"
         )
