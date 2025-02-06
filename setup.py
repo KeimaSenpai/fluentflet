@@ -20,7 +20,7 @@ setup(
     include_package_data=True,
     python_requires=">=3.7",
     install_requires=[
-        "flet[all]>=0.25.2",
+        "flet[all]>=0.26.0",
     ],
     project_urls={
         "Homepage": "https://github.com/Bbalduzz/fluentflet",
